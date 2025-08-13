@@ -1,0 +1,124 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  loginUserName String     @unique
+  name          String
+  email         String     @unique
+  uniqueId      String?    @unique
+  password      String
+  gender        Gender?
+  DOB           DateTime?
+  phone         String?
+  profileImage  String?
+  role          UserRole
+  status        UserStatus @default(Active)
+
+  joinedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fcmToken String?
+
+  // Relations
+  sentMessages          Message[]               @relation("SentMessages")
+  receivedMessages      Message[]               @relation("ReceivedMessages")
+  notificationRecipient NotificationRecipient[]
+  roomsAsSender         Room[]                  @relation("user1Relation")
+  roomsAsReceiver       Room[]                  @relation("user2Relation")
+
+  @@map("users")
+}
+
+model Otp {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  otpCode   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("otps")
+}
+
+enum UserStatus {
+  Active
+  Blocked
+  Deleted
+}
+
+enum Gender {
+  Male
+  Female
+  Other
+}
+
+enum UserRole {
+  Admin
+  Student
+  Teacher
+}
+
+// --------------------------// Room -------------------------------------//
+
+model Room {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  user1Id   String?   @db.ObjectId
+  user2Id   String?   @db.ObjectId
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user1     User?     @relation("user1Relation", fields: [user1Id], references: [id])
+  user2     User?     @relation("user2Relation", fields: [user2Id], references: [id])
+  message   Message[]
+
+  @@unique([user1Id, user2Id])
+  @@map("rooms")
+}
+
+model Message {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  senderId   String   @db.ObjectId
+  sender     User?    @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId String   @db.ObjectId
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  content    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+  Room       Room?    @relation(fields: [roomId], references: [id])
+  roomId     String?  @db.ObjectId
+
+  @@map("messages")
+}
+
+// --------------------------// Noptification -------------------------------------//
+model Notification {
+  id               String                  @id @default(auto()) @map("_id") @db.ObjectId
+  title            String
+  message          String
+  redirectEndpoint String?
+  users            NotificationRecipient[]
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  @@map("notifications")
+}
+
+model NotificationRecipient {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  isRead         Boolean       @default(false)
+  receivedAt     DateTime      @default(now())
+  notification   Notification? @relation(fields: [notificationId], references: [id])
+  user           User          @relation(fields: [userId], references: [id])
+  notificationId String        @db.ObjectId
+  userId         String        @db.ObjectId
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("notificationRecipient")
+}
