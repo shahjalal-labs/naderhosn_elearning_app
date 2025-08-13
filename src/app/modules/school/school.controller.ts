@@ -1,0 +1,62 @@
+import { Request, Response } from 'express';
+import {schoolServices} from './school.service';
+import sendResponse from '../../../shared/sendResponse';
+import catchAsync from "../../../shared/catchAsync";
+ 
+const createSchool = catchAsync (async (req: Request, res: Response) => {
+  const result = await schoolServices.createSchool(req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: 201,
+    message: "The school has been created successfully",
+    data: result,
+  });
+})
+ 
+const getAllSchools = catchAsync(async (_req: Request, res: Response) => {
+  const result = await schoolServices.getAllSchools();
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "All schools has been retrived successfully",
+    data: result,
+  });
+})
+ 
+const getSchoolById = catchAsync(async (req: Request, res: Response) => {
+  const result = await schoolServices.getSchoolById(req.params.id);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "school has been retrived successfully",
+    data: result,
+  });
+})
+ 
+const updateSchool = catchAsync(async (req: Request, res: Response) => {
+  const result = await schoolServices.updateSchool(req.params.id, req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "school has been updated successfully",
+    data: result,
+  });
+})
+ 
+const deleteSchool = catchAsync(async (req: Request, res: Response) => {
+  await schoolServices.deleteSchool(req.params.id);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "school has been deleted successfully",
+  });
+})
+ 
+export const schoolControllers = {
+  createSchool,
+  getAllSchools,
+  getSchoolById,
+  updateSchool,
+  deleteSchool,
+}
+  

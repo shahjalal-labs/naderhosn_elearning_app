@@ -17,7 +17,7 @@ model User {
   gender        Gender?
   DOB           DateTime?
   phone         String?
-  profileImage  String?
+  profileImage  String     @default("https://i.ibb.co.com/nrs3FjM/images.png")
   role          UserRole
   status        UserStatus @default(Active)
 
@@ -32,6 +32,8 @@ model User {
   notificationRecipient NotificationRecipient[]
   roomsAsSender         Room[]                  @relation("user1Relation")
   roomsAsReceiver       Room[]                  @relation("user2Relation")
+  StudentGrades         StudentGrades[]
+  Teacher               TeacherGrades[]
 
   @@map("users")
 }
@@ -121,4 +123,89 @@ model NotificationRecipient {
   updatedAt      DateTime      @updatedAt
 
   @@map("notificationRecipient")
+}
+
+// --------------------- SCHOOL ----------------------//
+
+model School {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  location         String
+  expectedTeachers Int
+  expectedStudents Int
+  schoolLogo       String
+  grades           SchoolGrades[]
+
+  // date 
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  Teacher   TeacherGrades[]
+}
+
+model SchoolGrades {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  grade         Int
+  section       SchoolSectionEnum
+  subject       subjectEnum
+  schoolId      String            @db.ObjectId
+  school        School            @relation(fields: [schoolId], references: [id])
+  StudentGrades StudentGrades[]
+  TeacherGrades TeacherGrades[]
+  Books         Books[]
+}
+
+enum SchoolSectionEnum {
+  A
+  B
+  C
+}
+
+enum subjectEnum {
+  Math
+  Science
+  English
+  others
+}
+
+//---------------------  Student Grades ---------------------//
+model StudentGrades {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  studentId String       @db.ObjectId
+  student   User         @relation(fields: [studentId], references: [id])
+  gradeId   String       @db.ObjectId
+  grade     SchoolGrades @relation(fields: [gradeId], references: [id])
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model TeacherGrades {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String       @db.ObjectId
+  user      User         @relation(fields: [userId], references: [id])
+  gradeId   String       @db.ObjectId
+  grade     SchoolGrades @relation(fields: [gradeId], references: [id])
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  School    School?      @relation(fields: [schoolId], references: [id])
+  schoolId  String?      @db.ObjectId
+
+  @@map("teachers")
+}
+
+model Books {
+  id       String       @id @default(auto()) @map("_id") @db.ObjectId
+  gradeId  String       @db.ObjectId
+  grade    SchoolGrades @relation(fields: [gradeId], references: [id])
+  bookName String
+  coverImg String
+  file     String
+  author   String
+  Edition  String
+  language Booklanguage
+}
+
+enum Booklanguage {
+  English
+  Spanish
+  French
 }
