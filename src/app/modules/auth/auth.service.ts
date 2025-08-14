@@ -11,6 +11,7 @@ import { uploadInSpace } from "../../../shared/UploadHelper";
 const loginUserIntoDB = async (payload: {
   userName: string;
   password: string;
+  fcmToken: string;
 }) => {
   const user = await prisma.user.findUnique({
     where: {
@@ -35,12 +36,20 @@ const loginUserIntoDB = async (payload: {
     throw new ApiError(401, "Invalid credentials");
   }
 
+  await prisma.user.update({
+    where: {
+      id: user.id,
+    },
+    data: {
+      fcmToken: payload.fcmToken,
+    },
+  });
   const accessToken = jwtHelpers.generateToken(
     {
       id: user.id,
       email: user.email,
       role: user.role,
-      userName: user.name,
+      userName: user.fcmToken,
     },
     config.jwt.jwt_secret as string,
     config.jwt.expires_in as string
@@ -53,7 +62,11 @@ const loginUserIntoDB = async (payload: {
   };
 };
 
-const adminLogin = async (payload: { userName: string; password: string }) => {
+const adminLogin = async (payload: {
+  userName: string;
+  password: string;
+  fcmToken: string;
+}) => {
   const user = await prisma.user.findUnique({
     where: {
       loginUserName: payload.userName,
@@ -81,12 +94,21 @@ const adminLogin = async (payload: { userName: string; password: string }) => {
     throw new ApiError(401, "Invalid credentials");
   }
 
+  await prisma.user.update({
+    where: {
+      id: user.id,
+    },
+    data: {
+      fcmToken: payload.fcmToken,
+    },
+  });
+
   const accessToken = jwtHelpers.generateToken(
     {
       id: user.id,
       email: user.email,
       role: user.role,
-      userName: user.name,
+      userName: user.fullName,
     },
     config.jwt.jwt_secret as string,
     config.jwt.expires_in as string
@@ -123,7 +145,7 @@ const sendForgotPasswordOtpDB = async (payload: string) => {
   const html = `
   <div style="font-family: Arial, sans-serif; color: #333;">
     <h2>Password Reset Request</h2>
-    <p>Hi <b>${existringUser.name}</b>,</p>
+    <p>Hi <b>${existringUser.fullName}</b>,</p>
     <p>Your OTP for password reset is:</p>
     <h1 style="color: #007BFF;">${otp}</h1>
     <p>This OTP is valid for <b>5 minutes</b>. If you did not request this, please ignore this email.</p>
@@ -312,7 +334,7 @@ const changePassword = async (
       id: user.id,
       email: user.email,
       role: user.role,
-      userName: user.name,
+      userName: user.fullName,
     },
     config.jwt.jwt_secret as string,
     config.jwt.expires_in as string

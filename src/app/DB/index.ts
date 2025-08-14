@@ -4,9 +4,8 @@ import config from "../../config";
 import prisma from "../../shared/prisma";
 
 const superAdminData = {
-  name: "Admin",
+  fullName: "Admin", // Added required property
   loginUserName : "admin01",
-  uniqueId : "admin01",
   email: "admin@gmail.com",
   password: config.super_admin_password! ,
   role: UserRole.Admin,

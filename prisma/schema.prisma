@@ -10,9 +10,8 @@ generator client {
 model User {
   id            String     @id @default(auto()) @map("_id") @db.ObjectId
   loginUserName String     @unique
-  FullName      String
+  fullName      String
   email         String     @unique
-  uniqueId      String?    @unique
   password      String
   gender        Gender?
   DOB           DateTime?
@@ -30,6 +29,7 @@ model User {
   notificationRecipient NotificationRecipient[]
   StudentGrades         StudentGrades[]
   Teacher               TeacherGrades[]
+  assignments           AssignmentStudent[]
 
   @@map("users")
 }
@@ -62,8 +62,6 @@ enum UserRole {
   Student
   Teacher
 }
-
-// --------------------------// Room -------------------------------------//
 
 // --------------------------// Noptification -------------------------------------//
 model Notification {
@@ -101,12 +99,13 @@ model School {
   expectedTeachers Int
   expectedStudents Int
   schoolLogo       String
-  grades           SchoolGrades[] 
+  grades           SchoolGrades[]
 
   // date 
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  Teacher   TeacherGrades[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  Teacher       TeacherGrades[]
+  StudentGrades StudentGrades[]
 }
 
 model SchoolGrades {
@@ -114,22 +113,31 @@ model SchoolGrades {
   grade         Int
   section       SchoolSectionEnum
   schoolId      String            @db.ObjectId
- school   School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school        School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   StudentGrades StudentGrades[]
   TeacherGrades TeacherGrades[]
   Books         Books[]
   gradeSubject  gradeSubject[]
+  Resources     Resources[]
+  Assingment    Assignment[]
+  Announcments  Announcments[]
+
+  @@unique([schoolId, grade, section])
 }
+
 enum SchoolSectionEnum {
   A
   B
   C
 }
+
 model gradeSubject {
   id      String       @id @default(auto()) @map("_id") @db.ObjectId
   subject String?
   gradeId String       @db.ObjectId
-  grade   SchoolGrades @relation(fields: [gradeId], references: [id] )
+  grade   SchoolGrades @relation(fields: [gradeId], references: [id])
+
+  @@map("gradeSubjects")
 }
 
 //---------------------  Student Grades ---------------------//
@@ -139,14 +147,18 @@ model StudentGrades {
   student   User         @relation(fields: [studentId], references: [id])
   gradeId   String       @db.ObjectId
   grade     SchoolGrades @relation(fields: [gradeId], references: [id])
+  School    School?      @relation(fields: [schoolId], references: [id])
+  schoolId  String?      @db.ObjectId
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+
+  @@map("gradeStudents")
 }
 
 model TeacherGrades {
   id        String       @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String       @db.ObjectId
-  user      User         @relation(fields: [userId], references: [id])
+  teacherId String       @db.ObjectId
+  teacher   User         @relation(fields: [teacherId], references: [id])
   gradeId   String       @db.ObjectId
   grade     SchoolGrades @relation(fields: [gradeId], references: [id])
   createdAt DateTime     @default(now())
@@ -154,7 +166,8 @@ model TeacherGrades {
   School    School?      @relation(fields: [schoolId], references: [id])
   schoolId  String?      @db.ObjectId
 
-  @@map("teachers")
+  @@unique([teacherId, gradeId, schoolId])
+  @@map("GradeTeachers")
 }
 
 // ------------------Books ----------------------------////
@@ -169,10 +182,71 @@ model Books {
   author   String
   Edition  String
   language Booklanguage
+
+  @@map("gradeBooks")
+}
+
+// ----------------------------Resources ------------------
+model Resources {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  Type        ResoucresType?
+  gradeId     String         @db.ObjectId
+  grade       SchoolGrades   @relation(fields: [gradeId], references: [id])
+
+  @@map("gradeResources")
+}
+
+enum ResoucresType {
+  Audio
+  Video
+  File
+}
+
+// ------------------ Assingmnet ---------------//
+
+model Assignment {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  startPage   Int
+  endPage     Int
+  instruction String
+  attachament String?
+  dueDate     DateTime
+  gradeId     String       @db.ObjectId
+  grade       SchoolGrades @relation(fields: [gradeId], references: [id])
+
+  students AssignmentStudent[]
+}
+
+model AssignmentStudent {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String     @db.ObjectId
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  assignmentId String     @db.ObjectId
+  submittedAt  DateTime?
+  score        Float?
+
+  @@unique([userId, assignmentId])
 }
 
 enum Booklanguage {
   English
   Spanish
   French
+}
+
+// --------------------------- announcments -----------------// 
+
+model Announcments {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  anouncement String
+  postdate    DateTime
+  gradeId     String       @db.ObjectId
+  grade       SchoolGrades @relation(fields: [gradeId], references: [id])
+
+  @@map("gradeAnnouncement")
 }

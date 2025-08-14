@@ -3,21 +3,21 @@ import catchAsync from "../../../shared/catchAsync";
 import sendResponse from "../../../shared/sendResponse";
 import { userService } from "./user.services";
 
-const createStudent = catchAsync(async (req, res) => {
-  const result = await userService.createStudent(req.body);
+const getStudents = catchAsync(async (req, res) => {
+  const result = await userService.getStudents();
   sendResponse(res, {
     success: true,
     statusCode: 201,
-    message: "student  created successfully",
+    message: "student  retireved successfully",
     data: result,
   });
 });
-const createTeacher = catchAsync(async (req, res) => {
-  const result = await userService.createTeacher(req.body);
+const getTeachers = catchAsync(async (req, res) => {
+  const result = await userService.getTeachers();
   sendResponse(res, {
     success: true,
     statusCode: 201,
-    message: " Teacher   created successfully",
+    message: " Teacher   retrieved successfully",
     data: result,
   });
 });
@@ -79,11 +79,11 @@ const adminOverview = catchAsync(async (req, res) => {
 
 
 export const UserControllers = {
-  createStudent,
   getUsers,
   getSingleUser,
   updateUser,
   deleteUser,
   adminOverview,
-  createTeacher
+  getTeachers,
+  getStudents
 };

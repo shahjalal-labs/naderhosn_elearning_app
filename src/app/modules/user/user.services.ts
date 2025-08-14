@@ -5,12 +5,38 @@ import prisma from "../../../shared/prisma";
 import { paginationHelper } from "../../../shared/pagination";
 import { uploadInSpace } from "../../../shared/UploadHelper";
 
-const createStudent = async (payload: User) => {
-  return "";
+const getStudents = async () => {
+  return await prisma.user.findMany({
+    where : {
+      role : "Student"
+    },
+    select :{
+      id : true,
+      fullName : true ,
+      email : true,
+      DOB : true ,
+      gender : true ,
+      phone : true ,
+      profileImage : true ,
+    }
+  });
 };
 
-const createTeacher = async (payload: User) => {
-  return "";
+const getTeachers = async () => {
+  return await prisma.user.findMany({
+    where : {
+      role : "Teacher"
+    },
+     select :{
+      id : true,
+      fullName : true ,
+      email : true,
+      DOB : true ,
+      gender : true ,
+      phone : true ,
+      profileImage : true ,
+    }
+  });
 };
 
 const getSingleUserIntoDB = async (id: string) => {
@@ -51,7 +77,7 @@ const getUsers = async (query: any) => {
     where: {},
     select: {
       id: true,
-      name: true,
+      fullName: true,
       profileImage: true,
     },
     take: limit,
@@ -105,6 +131,6 @@ export const userService = {
   updateUser,
   adminOverview,
   deleteUser,
-  createStudent,
-  createTeacher,
+  getStudents,
+  getTeachers,
 };
