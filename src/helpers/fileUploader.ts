@@ -31,9 +31,7 @@ export const upload = multer({
 
 // Upload single images
 const updateProfileImage = upload.single("avatar");
-const uploadQuizImage = upload.single("quizImage");
-const uploadServiceImage = upload.single("serviceImage")
-
+const uploadBookFile = upload.single("bookFile");
 // Upload multiple images for portfolio
 const sendFiles = upload.fields([
   { name: "sendFiles", maxCount: 10 },
@@ -43,6 +41,5 @@ const sendFiles = upload.fields([
 export const fileUploader = {
   sendFiles,
   updateProfileImage,
-  uploadQuizImage,
-  uploadServiceImage
+  uploadBookFile
 };

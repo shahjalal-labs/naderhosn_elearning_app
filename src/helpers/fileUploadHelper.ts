@@ -24,11 +24,11 @@ const upload = multer({
 });
 
 // upload single image
-const videoUrl = upload.single("videoUrl");
 const profileImage = upload.single("profileImage");
 const coverPhoto = upload.single("coverPhoto");
 const experienceFile = upload.single("experienceFile");
 const uploadSingle = upload.single("file");
+const uploadSchoolLogo = upload.single("schoolLogo");
 
 // upload multiple image
 const uploadMultiple = upload.fields([
@@ -39,10 +39,10 @@ const uploadMultiple = upload.fields([
 
 export const fileUploader = {
   upload,
-  videoUrl,
   uploadMultiple,
   profileImage,
   coverPhoto,
   uploadSingle,
   experienceFile,
+  uploadSchoolLogo
 };

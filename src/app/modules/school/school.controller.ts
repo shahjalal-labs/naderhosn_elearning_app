@@ -2,9 +2,15 @@ import { Request, Response } from 'express';
 import {schoolServices} from './school.service';
 import sendResponse from '../../../shared/sendResponse';
 import catchAsync from "../../../shared/catchAsync";
+import ApiError from '../../../errors/ApiErrors';
+import httpStatus from 'http-status';
  
 const createSchool = catchAsync (async (req: Request, res: Response) => {
-  const result = await schoolServices.createSchool(req.body);
+  const file = req.file
+  if (!file) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "School logo is missing");
+  }
+  const result = await schoolServices.createSchool(req.body , file);
   sendResponse(res, {
     success: true,
     statusCode: 201,

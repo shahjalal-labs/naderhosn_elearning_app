@@ -10,7 +10,7 @@ generator client {
 model User {
   id            String     @id @default(auto()) @map("_id") @db.ObjectId
   loginUserName String     @unique
-  name          String
+  FullName      String
   email         String     @unique
   uniqueId      String?    @unique
   password      String
@@ -27,11 +27,7 @@ model User {
   fcmToken String?
 
   // Relations
-  sentMessages          Message[]               @relation("SentMessages")
-  receivedMessages      Message[]               @relation("ReceivedMessages")
   notificationRecipient NotificationRecipient[]
-  roomsAsSender         Room[]                  @relation("user1Relation")
-  roomsAsReceiver       Room[]                  @relation("user2Relation")
   StudentGrades         StudentGrades[]
   Teacher               TeacherGrades[]
 
@@ -69,35 +65,6 @@ enum UserRole {
 
 // --------------------------// Room -------------------------------------//
 
-model Room {
-  id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  user1Id   String?   @db.ObjectId
-  user2Id   String?   @db.ObjectId
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  user1     User?     @relation("user1Relation", fields: [user1Id], references: [id])
-  user2     User?     @relation("user2Relation", fields: [user2Id], references: [id])
-  message   Message[]
-
-  @@unique([user1Id, user2Id])
-  @@map("rooms")
-}
-
-model Message {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  senderId   String   @db.ObjectId
-  sender     User?    @relation("SentMessages", fields: [senderId], references: [id])
-  receiverId String   @db.ObjectId
-  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
-  content    String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now())
-  Room       Room?    @relation(fields: [roomId], references: [id])
-  roomId     String?  @db.ObjectId
-
-  @@map("messages")
-}
-
 // --------------------------// Noptification -------------------------------------//
 model Notification {
   id               String                  @id @default(auto()) @map("_id") @db.ObjectId
@@ -134,7 +101,7 @@ model School {
   expectedTeachers Int
   expectedStudents Int
   schoolLogo       String
-  grades           SchoolGrades[]
+  grades           SchoolGrades[] 
 
   // date 
   createdAt DateTime        @default(now())
@@ -146,12 +113,12 @@ model SchoolGrades {
   id            String            @id @default(auto()) @map("_id") @db.ObjectId
   grade         Int
   section       SchoolSectionEnum
-  subject       subjectEnum
   schoolId      String            @db.ObjectId
   school        School            @relation(fields: [schoolId], references: [id])
   StudentGrades StudentGrades[]
   TeacherGrades TeacherGrades[]
   Books         Books[]
+  gradeSubject  gradeSubject[]
 }
 
 enum SchoolSectionEnum {
@@ -159,12 +126,11 @@ enum SchoolSectionEnum {
   B
   C
 }
-
-enum subjectEnum {
-  Math
-  Science
-  English
-  others
+model gradeSubject {
+  id      String       @id @default(auto()) @map("_id") @db.ObjectId
+  subject String?
+  gradeId String       @db.ObjectId
+  grade   SchoolGrades @relation(fields: [gradeId], references: [id] )
 }
 
 //---------------------  Student Grades ---------------------//
@@ -191,6 +157,8 @@ model TeacherGrades {
 
   @@map("teachers")
 }
+
+// ------------------Books ----------------------------////
 
 model Books {
   id       String       @id @default(auto()) @map("_id") @db.ObjectId
