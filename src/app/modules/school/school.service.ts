@@ -3,14 +3,19 @@ import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAW
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import prisma from "../../../shared/prisma";
+import getModelKeys from "../../../helpers/getModelKeys";
+import QueryBuilder from "../../builder/QueryBuilder";
 
 const createSchool = async (data: any, file: Express.Multer.File) => {
-   const { grades, name, location, expectedTeachers, expectedStudents } = data;
+  const { grades, name, location, expectedTeachers, expectedStudents } = data;
   let schoolLogo: string;
   try {
-     schoolLogo  = (await uploadToDigitalOceanAWS(file)).Location;
+    schoolLogo = (await uploadToDigitalOceanAWS(file)).Location;
   } catch (error) {
-    throw new ApiError(httpStatus.NOT_ACCEPTABLE , "Failed to upload school logo");
+    throw new ApiError(
+      httpStatus.NOT_ACCEPTABLE,
+      "Failed to upload school logo"
+    );
   }
   return await prisma.school.create({
     data: {
@@ -23,34 +28,113 @@ const createSchool = async (data: any, file: Express.Multer.File) => {
         create: grades.map((g: any) => ({
           grade: g.grade,
           section: g.section,
-          gradeSubject: { create: [] }, 
+          gradeSubject: { create: [] },
         })),
       },
     },
     include: {
       grades: {
-        include :{
-          gradeSubject : true
-        }
+        include: {
+          gradeSubject: true,
+        },
       },
     },
   });
 };
 
-const getAllSchools = async () => {
-  return await prisma.school.findMany();
+const getAllSchools = async (query: any) => {
+  const keys = await getModelKeys("school");
+  const usersQuery = new QueryBuilder(prisma.school, query, keys);
+  const result = await usersQuery
+    .search(["name", "location"])
+    .filter()
+    .sort()
+    .fields()
+    .exclude()
+    .paginate()
+    .include({ grades: true })
+    .execute();
+  const pagination = await usersQuery.countTotal();
+  return {
+    meta: pagination,
+    result,
+  };
 };
 
 const getSchoolById = async (id: string) => {
-  return await prisma.school.findUnique({ where: { id } });
+  const isExist = await prisma.school.findUnique({
+    where: { id },
+  });
+  if (!isExist) {
+    throw new ApiError(httpStatus.NOT_FOUND, "School not found");
+  }
+  const res =  await prisma.school.findUnique({
+    where: { id },
+      select :{
+        id:true,
+        name : true,
+        schoolLogo :true,
+        grades : {
+          select :{
+            id :true,
+            grade :true,
+            section :true
+          }
+        }
+      },
+  });
+return res
 };
 
-const updateSchool = async (id: string, data: any) => {
-  return await prisma.school.update({ where: { id }, data });
+const updateSchool = async (
+  id: string,
+  data: School,
+  file?: Express.Multer.File
+) => {
+  //  Check if school exists
+  const isExist = await prisma.school.findUnique({
+    where: { id },
+    include: { grades: { include: { gradeSubject: true } } },
+  });
+
+  if (!isExist) {
+    throw new ApiError(httpStatus.NOT_FOUND, "School not found");
+  }
+
+  //  file upload 
+  if (file) {
+    try {
+      const schoolLogo = (await uploadToDigitalOceanAWS(file)).Location;
+      data.schoolLogo = schoolLogo;
+    } catch (error) {
+      throw new ApiError(
+        httpStatus.NOT_ACCEPTABLE,
+        "Failed to upload school logo"
+      );
+    }
+  }
+
+  // Update school
+   await prisma.school.update({
+    where: { id },
+    data: data,
+    include: {
+      grades: { include: { gradeSubject: true } },
+    },
+  });
+  return
 };
+
 
 const deleteSchool = async (id: string) => {
-  return await prisma.school.delete({ where: { id } });
+  const isExist = await prisma.school.findUnique({
+    where: { id },
+  });
+  if (!isExist) {
+    throw new ApiError(httpStatus.NOT_FOUND, "School not found");
+  }
+   await prisma.school.delete({ where: { id } });
+   return
 };
 
 export const schoolServices = {

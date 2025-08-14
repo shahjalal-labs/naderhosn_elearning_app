@@ -20,7 +20,7 @@ const createSchool = catchAsync (async (req: Request, res: Response) => {
 })
  
 const getAllSchools = catchAsync(async (_req: Request, res: Response) => {
-  const result = await schoolServices.getAllSchools();
+  const result = await schoolServices.getAllSchools(_req.query); 
   sendResponse(res, {
     success: true,
     statusCode: 200,
@@ -40,7 +40,7 @@ const getSchoolById = catchAsync(async (req: Request, res: Response) => {
 })
  
 const updateSchool = catchAsync(async (req: Request, res: Response) => {
-  const result = await schoolServices.updateSchool(req.params.id, req.body);
+  const result = await schoolServices.updateSchool(req.params.id, req.body , req.file);
   sendResponse(res, {
     success: true,
     statusCode: 200,

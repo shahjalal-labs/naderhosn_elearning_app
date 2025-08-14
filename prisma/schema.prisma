@@ -114,13 +114,12 @@ model SchoolGrades {
   grade         Int
   section       SchoolSectionEnum
   schoolId      String            @db.ObjectId
-  school        School            @relation(fields: [schoolId], references: [id])
+ school   School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   StudentGrades StudentGrades[]
   TeacherGrades TeacherGrades[]
   Books         Books[]
   gradeSubject  gradeSubject[]
 }
-
 enum SchoolSectionEnum {
   A
   B
