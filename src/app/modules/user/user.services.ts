@@ -122,7 +122,24 @@ const updateUser = async (
 };
 
 const adminOverview = async () => {
-  return {};
+  const totalRegisterSchool = await prisma.school.count()
+  const totalTeacher = await prisma.user.count({
+    where :{
+      role : "Teacher"
+    }
+  })
+  const totalStudent = await prisma.user.count({
+    where :{
+      role : "Student"
+    }
+  })
+  const totalBooks = await prisma.books.count()
+  return {
+    totalRegisterSchool,
+    totalTeacher,
+    totalStudent,
+    totalBooks
+  };
 };
 
 export const userService = {

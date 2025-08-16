@@ -35,5 +35,4 @@ router.post(
   gradesControllers.assignNewStudent
 );
 
-
 export const gradesRoutes = router;

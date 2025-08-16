@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, School } from "@prisma/client";
+import { School } from "@prisma/client";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";

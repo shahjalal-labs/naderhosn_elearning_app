@@ -68,7 +68,7 @@ const assignTeacher = catchAsync(async (req: Request, res: Response) => {
   await gradesServices.assignTeacherIntoDB(req.body , file);
   sendResponse(res, {
     success: true,
-    statusCode: 200,
+    statusCode: 201,
     message: "Teacher has been assing successfully",
   });
 })
@@ -76,7 +76,7 @@ const assignExistingTeacher = catchAsync(async (req: Request, res: Response) => 
   await gradesServices.assignExistingTeacherIntoDB(req.body);
   sendResponse(res, {
     success: true,
-    statusCode: 200,
+    statusCode: 201,
     message: "Teacher has been assing successfully",
   });
 })
@@ -90,7 +90,7 @@ const assignNewStudent = catchAsync(async (req: Request, res: Response) => {
   await gradesServices.assignNewStudentIntoDB(req.body , file);
   sendResponse(res, {
     success: true,
-    statusCode: 200,
+    statusCode: 201,
     message: "student has been assing successfully",
   });
 })
@@ -103,6 +103,6 @@ export const gradesControllers = {
   deleteGrades,
   assignTeacher,
   assignExistingTeacher,
-  assignNewStudent
+  assignNewStudent,
 }
   

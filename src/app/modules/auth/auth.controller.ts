@@ -3,7 +3,7 @@ import { authService } from "./auth.service";
 import sendResponse from "../../../shared/sendResponse";
 
 const loginUser = catchAsync(async (req, res) => {
-  const result = await authService.loginUserIntoDB(req.body);
+  const result = await authService.loginUserIntoDB(req.body );
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -13,7 +13,7 @@ const loginUser = catchAsync(async (req, res) => {
 });
 
 const adminLogin = catchAsync(async (req, res) => {
-  const result = await authService.adminLogin(req.body);
+  const result = await authService.adminLogin(req.body );
   sendResponse(res, {
     statusCode: 200,
     success: true,

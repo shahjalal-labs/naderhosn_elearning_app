@@ -3,7 +3,8 @@ import { gradeQueryFilter, GradeQueryFilterType } from "./grade.const";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
-import bcrypt from 'bcryptjs';
+import bcrypt from "bcryptjs";
+import { JwtPayload } from "jsonwebtoken";
 const prisma = new PrismaClient();
 
 const createGrades = async (data: any) => {
@@ -116,14 +117,14 @@ const getGradesById = async (
       extraData = await prisma.announcments.findMany({
         where: {
           gradeId: id,
-          isPublished :true,
+          isPublished: true,
           title: { contains: query.searchTerm, mode: "insensitive" },
         },
       });
       break;
 
     default:
-       const defaultTeacher = await prisma.teacherGrades.findMany({
+      const defaultTeacher = await prisma.teacherGrades.findMany({
         where: {
           gradeId: id,
           teacher: {
@@ -189,7 +190,7 @@ const assignTeacherIntoDB = async (payload: any, file: Express.Multer.File) => {
   if (!isGradeExist) {
     throw new ApiError(httpStatus.NOT_FOUND, "School grade isn't found");
   }
-  const hashedPass = await bcrypt.hash(password, 10)
+  const hashedPass = await bcrypt.hash(password, 10);
 
   const isExist = await prisma.teacherGrades.findFirst({
     where: {
@@ -212,7 +213,7 @@ const assignTeacherIntoDB = async (payload: any, file: Express.Multer.File) => {
         ...userCreateData,
         profileImage,
         role: "Teacher",
-        password : hashedPass
+        password: hashedPass,
       },
     });
 
@@ -283,7 +284,7 @@ const assignNewStudentIntoDB = async (
       "Failed to upload profile image"
     );
   }
-  const { gradeId, schoolId, password , ...userCreateData } = payload;
+  const { gradeId, schoolId, password, ...userCreateData } = payload;
 
   const [isSchoolExist, isGradeExist] = await Promise.all([
     prisma.school.findUnique({ where: { id: schoolId } }),
@@ -305,12 +306,15 @@ const assignNewStudentIntoDB = async (
       gradeId,
       schoolId,
     },
-    include :{
-      grade : true
-    }
+    include: {
+      grade: true,
+    },
   });
   if (isExist) {
-    throw new ApiError(httpStatus.BAD_REQUEST, `The student already exist in  Grade ${isExist.grade.grade} section ${isExist.grade.section} `);
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `The student already exist in  Grade ${isExist.grade.grade} section ${isExist.grade.section} `
+    );
   }
   const hashedPass = await bcrypt.hash(password, 10);
   // Create teacher & teacherGrades in one transaction
@@ -321,7 +325,7 @@ const assignNewStudentIntoDB = async (
         ...userCreateData,
         profileImage,
         role: "Student",
-        password : hashedPass
+        password: hashedPass,
       },
     });
 
@@ -338,6 +342,7 @@ const assignNewStudentIntoDB = async (
 
   return result;
 };
+
 
 export const gradesServices = {
   createGrades,
