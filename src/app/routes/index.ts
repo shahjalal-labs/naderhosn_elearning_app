@@ -5,6 +5,8 @@ import { schoolRoutes } from "../modules/school/school.routes";
 import { bookRoutes } from "../modules/book/book.routes";
 import { resourceRoutes } from "../modules/resource/resource.routes";
 import { gradesRoutes } from "../modules/grades/grades.routes";
+import { assignmentRoutes } from "../modules/assignment/assignment.routes";
+import { announcementRoutes } from "../modules/announcement/announcement.routes";
 
 const router = express.Router();
 
@@ -32,6 +34,14 @@ const moduleRoutes = [
   {
     path: "/grade",
     route: gradesRoutes,
+  },
+  {
+    path: "/assignment",
+    route: assignmentRoutes,
+  },
+  {
+    path: "/announcement",
+    route: announcementRoutes,
   },
 ];
 

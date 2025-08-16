@@ -2,9 +2,16 @@ import { Request, Response } from 'express';
 import {resourceServices} from './resource.service';
 import sendResponse from '../../../shared/sendResponse';
 import catchAsync from "../../../shared/catchAsync";
+import ApiError from '../../../errors/ApiErrors';
+import httpStatus from 'http-status';
  
 const createResource = catchAsync (async (req: Request, res: Response) => {
-  const result = await resourceServices.createResource(req.body);
+  const {gradeId}  = req.params
+  const resourcesFile = req.file
+  if(!resourcesFile){
+    throw new ApiError(httpStatus.BAD_REQUEST , "Resources are missing ")
+  }
+  const result = await resourceServices.createResource(req.body , gradeId , resourcesFile , req.user);
   sendResponse(res, {
     success: true,
     statusCode: 201,
@@ -34,7 +41,8 @@ const getResourceById = catchAsync(async (req: Request, res: Response) => {
 })
  
 const updateResource = catchAsync(async (req: Request, res: Response) => {
-  const result = await resourceServices.updateResource(req.params.id, req.body);
+  const resourcesFile = req.file
+  const result = await resourceServices.updateResource(req.params.id, req.body , resourcesFile);
   sendResponse(res, {
     success: true,
     statusCode: 200,

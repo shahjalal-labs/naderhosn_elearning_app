@@ -1,31 +1,71 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
- 
-const createResource = async (data: any) => {
-  return await prisma.resource.create({ data });
+import { Resources } from "@prisma/client";
+import prisma from "../../../shared/prisma";
+import ApiError from "../../../errors/ApiErrors";
+import httpStatus from "http-status";
+import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
+import { JwtPayload } from "jsonwebtoken";
+
+const createResource = async (
+  data: Resources,
+  gradeId: string,
+  file: Express.Multer.File,
+  user : JwtPayload
+) => {
+  const isGradeExist = await prisma.schoolGrades.findUnique({
+    where: { id: gradeId },
+  });
+  if (!isGradeExist)
+    throw new ApiError(httpStatus.NOT_FOUND, "Grade not found");
+  const fileUpload = (await uploadToDigitalOceanAWS(file)).Location;
+  return await prisma.resources.create({
+    data: {
+      ...data,
+      gradeId,
+      file: fileUpload,
+      uploderName : user.fullName,
+      uplodedBy : user.role
+    },
+  });
 };
- 
+
 const getAllResources = async () => {
-  return await prisma.resource.findMany();
+  return await prisma.resources.findMany();
 };
- 
+
 const getResourceById = async (id: string) => {
-  return await prisma.resource.findUnique({ where: { id } });
+  const res =  await prisma.resources.findUnique({ where: { id } });
+  if(!res) throw new ApiError(httpStatus.NOT_FOUND, "Resource not found");
 };
- 
-const updateResource = async (id: string, data: any) => {
-  return await prisma.resource.update({ where: { id }, data });
+
+const updateResource = async (id: string, data: Partial<Resources> , file ?: Express.Multer.File ) => {
+   const isRecourseExist = await prisma.resources.findUnique({
+    where: { id },
+  });
+  if (!isRecourseExist)
+    throw new ApiError(httpStatus.NOT_FOUND, "Recourse not found");
+  let fileUpload: string | undefined;
+  if (file) {
+    fileUpload = (await uploadToDigitalOceanAWS(file)).Location;
+  }
+  return await prisma.resources.update({
+    where: {
+      id
+    },
+    data: {
+      ...data,
+      ...(fileUpload && { file: fileUpload }),
+    },
+  });
 };
- 
+
 const deleteResource = async (id: string) => {
-  return await prisma.resource.delete({ where: { id } });
+  return await prisma.resources.delete({ where: { id } });
 };
- 
+
 export const resourceServices = {
   createResource,
   getAllResources,
   getResourceById,
   updateResource,
   deleteResource,
-}
-  
+};

@@ -7,7 +7,7 @@ const getStudents = catchAsync(async (req, res) => {
   const result = await userService.getStudents();
   sendResponse(res, {
     success: true,
-    statusCode: 201,
+    statusCode: 200,
     message: "student  retireved successfully",
     data: result,
   });
@@ -16,7 +16,7 @@ const getTeachers = catchAsync(async (req, res) => {
   const result = await userService.getTeachers();
   sendResponse(res, {
     success: true,
-    statusCode: 201,
+    statusCode: 200,
     message: " Teacher   retrieved successfully",
     data: result,
   });

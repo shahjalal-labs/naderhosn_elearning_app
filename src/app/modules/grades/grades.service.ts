@@ -3,6 +3,7 @@ import { gradeQueryFilter, GradeQueryFilterType } from "./grade.const";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
+import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 const createGrades = async (data: any) => {
@@ -115,13 +116,35 @@ const getGradesById = async (
       extraData = await prisma.announcments.findMany({
         where: {
           gradeId: id,
+          isPublished :true,
           title: { contains: query.searchTerm, mode: "insensitive" },
         },
       });
       break;
 
     default:
-      extraData = [];
+       const defaultTeacher = await prisma.teacherGrades.findMany({
+        where: {
+          gradeId: id,
+          teacher: {
+            fullName: { contains: query.searchTerm, mode: "insensitive" },
+          },
+        },
+        select: {
+          teacher: {
+            select: {
+              id: true,
+              fullName: true,
+              profileImage: true,
+              email: true,
+              phone: true,
+              gender: true,
+              DOB: true,
+            },
+          },
+        },
+      });
+      extraData = defaultTeacher.map((t) => t.teacher);
       break;
   }
 
@@ -153,7 +176,7 @@ const assignTeacherIntoDB = async (payload: any, file: Express.Multer.File) => {
       "Failed to upload profile image"
     );
   }
-  const { gradeId, schoolId, ...userCreateData } = payload;
+  const { gradeId, schoolId, password, ...userCreateData } = payload;
 
   const [isSchoolExist, isGradeExist] = await Promise.all([
     prisma.school.findUnique({ where: { id: schoolId } }),
@@ -166,6 +189,7 @@ const assignTeacherIntoDB = async (payload: any, file: Express.Multer.File) => {
   if (!isGradeExist) {
     throw new ApiError(httpStatus.NOT_FOUND, "School grade isn't found");
   }
+  const hashedPass = await bcrypt.hash(password, 10)
 
   const isExist = await prisma.teacherGrades.findFirst({
     where: {
@@ -188,6 +212,7 @@ const assignTeacherIntoDB = async (payload: any, file: Express.Multer.File) => {
         ...userCreateData,
         profileImage,
         role: "Teacher",
+        password : hashedPass
       },
     });
 
@@ -258,7 +283,7 @@ const assignNewStudentIntoDB = async (
       "Failed to upload profile image"
     );
   }
-  const { gradeId, schoolId, ...userCreateData } = payload;
+  const { gradeId, schoolId, password , ...userCreateData } = payload;
 
   const [isSchoolExist, isGradeExist] = await Promise.all([
     prisma.school.findUnique({ where: { id: schoolId } }),
@@ -280,10 +305,14 @@ const assignNewStudentIntoDB = async (
       gradeId,
       schoolId,
     },
+    include :{
+      grade : true
+    }
   });
   if (isExist) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "The student already exist");
+    throw new ApiError(httpStatus.BAD_REQUEST, `The student already exist in  Grade ${isExist.grade.grade} section ${isExist.grade.section} `);
   }
+  const hashedPass = await bcrypt.hash(password, 10);
   // Create teacher & teacherGrades in one transaction
   const result = await prisma.$transaction(async (tx) => {
     // Create teacher
@@ -292,6 +321,7 @@ const assignNewStudentIntoDB = async (
         ...userCreateData,
         profileImage,
         role: "Student",
+        password : hashedPass
       },
     });
 

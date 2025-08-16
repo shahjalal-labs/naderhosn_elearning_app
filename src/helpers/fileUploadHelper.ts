@@ -36,6 +36,10 @@ const uploadMultiple = upload.fields([
   { name: "mediaUrl", maxCount: 1 },
   { name: "documentUrls", maxCount: 5 },
 ]);
+const uploadBooks = upload.fields([
+  { name: "coverImage", maxCount: 1 },
+  { name: "file", maxCount: 1 },
+]);
 
 export const fileUploader = {
   upload,
@@ -44,5 +48,6 @@ export const fileUploader = {
   coverPhoto,
   uploadSingle,
   experienceFile,
-  uploadSchoolLogo
+  uploadSchoolLogo,
+  uploadBooks
 };

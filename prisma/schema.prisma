@@ -30,6 +30,7 @@ model User {
   StudentGrades         StudentGrades[]
   Teacher               TeacherGrades[]
   assignments           AssignmentStudent[]
+  assignmentId          String?                 @db.ObjectId
 
   @@map("users")
 }
@@ -149,8 +150,9 @@ model StudentGrades {
   grade     SchoolGrades @relation(fields: [gradeId], references: [id])
   School    School?      @relation(fields: [schoolId], references: [id])
   schoolId  String?      @db.ObjectId
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("gradeStudents")
 }
@@ -161,10 +163,11 @@ model TeacherGrades {
   teacher   User         @relation(fields: [teacherId], references: [id])
   gradeId   String       @db.ObjectId
   grade     SchoolGrades @relation(fields: [gradeId], references: [id])
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
   School    School?      @relation(fields: [schoolId], references: [id])
   schoolId  String?      @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([teacherId, gradeId, schoolId])
   @@map("GradeTeachers")
@@ -183,7 +186,17 @@ model Books {
   Edition  String
   language Booklanguage
 
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  Assignment Assignment[]
+
   @@map("gradeBooks")
+}
+
+enum Booklanguage {
+  English
+  Spanish
+  French
 }
 
 // ----------------------------Resources ------------------
@@ -192,8 +205,14 @@ model Resources {
   title       String
   description String
   Type        ResoucresType?
+  file        String
   gradeId     String         @db.ObjectId
   grade       SchoolGrades   @relation(fields: [gradeId], references: [id])
+  uplodedBy   String
+  uploderName String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("gradeResources")
 }
@@ -201,23 +220,27 @@ model Resources {
 enum ResoucresType {
   Audio
   Video
-  File
+  Pdf
 }
 
 // ------------------ Assingmnet ---------------//
 
 model Assignment {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   startPage   Int
   endPage     Int
   instruction String
   attachament String?
   dueDate     DateTime
-  gradeId     String       @db.ObjectId
-  grade       SchoolGrades @relation(fields: [gradeId], references: [id])
+  gradeId     String              @db.ObjectId
+  grade       SchoolGrades        @relation(fields: [gradeId], references: [id])
+  bookId      String              @db.ObjectId
+  book        Books               @relation(fields: [bookId], references: [id])
+  students    AssignmentStudent[]
 
-  students AssignmentStudent[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AssignmentStudent {
@@ -229,13 +252,10 @@ model AssignmentStudent {
   submittedAt  DateTime?
   score        Float?
 
-  @@unique([userId, assignmentId])
-}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-enum Booklanguage {
-  English
-  Spanish
-  French
+  @@unique([userId, assignmentId])
 }
 
 // --------------------------- announcments -----------------// 
@@ -245,8 +265,12 @@ model Announcments {
   title       String
   anouncement String
   postdate    DateTime
+  isPublished Boolean? 
   gradeId     String       @db.ObjectId
   grade       SchoolGrades @relation(fields: [gradeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("gradeAnnouncement")
 }

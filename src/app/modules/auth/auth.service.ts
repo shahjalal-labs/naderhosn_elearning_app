@@ -49,7 +49,7 @@ const loginUserIntoDB = async (payload: {
       id: user.id,
       email: user.email,
       role: user.role,
-      userName: user.fcmToken,
+      fullName: user.fullName,
     },
     config.jwt.jwt_secret as string,
     config.jwt.expires_in as string
@@ -108,7 +108,7 @@ const adminLogin = async (payload: {
       id: user.id,
       email: user.email,
       role: user.role,
-      userName: user.fullName,
+      fullName: user.fullName,
     },
     config.jwt.jwt_secret as string,
     config.jwt.expires_in as string
