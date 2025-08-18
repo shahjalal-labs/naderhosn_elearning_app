@@ -29,6 +29,7 @@ const getBookById = async (id: string) => {
   if(!res){
     throw new Error("Book not found");
   }
+  return res
 };
 
 const updateBook = async (
