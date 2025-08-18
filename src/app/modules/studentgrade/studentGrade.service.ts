@@ -1,4 +1,3 @@
-import { PrismaClient, SchoolSectionEnum } from "@prisma/client";
 import { JwtPayload } from "jsonwebtoken";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
@@ -105,12 +104,16 @@ const getGradesByIdForstudent = async (
       break;
 
     case gradeQueryFilterForStudent.ASSIGNMENT:
-      extraData = await prisma.assignment.findMany({
+      const assignmentData = await prisma.assignmentStudent.findMany({
         where: {
-          gradeId: studentGrade.gradeId,
-          title: { contains: query.searchTerm, mode: "insensitive" },
+          userId : studentGrade.studentId,
+          // title: { contains: query.searchTerm, mode: "insensitive" },
         },
-      });
+        include :{
+          assignment :true
+        }
+      })
+      extraData = assignmentData.map(a => a.assignment)
       break;
 
     case gradeQueryFilterForStudent.ANNOUNCMENT:

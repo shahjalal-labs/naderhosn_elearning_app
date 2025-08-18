@@ -4,11 +4,14 @@ import { fileUploader } from "../../../helpers/fileUploadHelper";
 import { parseBodyData } from "../../middlewares/parseBodyData";
 import validateRequest from "../../middlewares/validateRequest";
 import {createAssignmentSchema } from "./assignment.validation";
+import auth from "../../middlewares/auth";
+import { UserRole } from "@prisma/client";
 
 const router = express.Router();
 
 router.post(
   "/",
+  auth(UserRole.Teacher),
   fileUploader.uploadSingle,
   parseBodyData,
   validateRequest(createAssignmentSchema),

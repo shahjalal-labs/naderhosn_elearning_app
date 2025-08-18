@@ -19,7 +19,7 @@ const createBook = catchAsync(async (req: Request, res: Response) => {
     throw new Error("Cover image are required");
   }
   if (!file) {
-    throw new Error("Cover image are required");
+    throw new Error("Book file  are required");
   }
   const result = await bookServices.createBook(gradeId ,req.body, coverImg, file);
   sendResponse(res, {
