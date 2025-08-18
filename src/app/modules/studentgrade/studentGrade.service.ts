@@ -109,11 +109,15 @@ const getGradesByIdForstudent = async (
           userId : studentGrade.studentId,
           // title: { contains: query.searchTerm, mode: "insensitive" },
         },
-        include :{
-          assignment :true
+        select :{
+          assignmentStatus : true,
+          assignment : true
         }
       })
-      extraData = assignmentData.map(a => a.assignment)
+      extraData = assignmentData.map(a => ({
+      ...a.assignment,
+      status : a.assignmentStatus
+      }) )
       break;
 
     case gradeQueryFilterForStudent.ANNOUNCMENT:

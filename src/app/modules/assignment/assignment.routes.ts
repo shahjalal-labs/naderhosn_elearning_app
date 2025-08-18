@@ -17,8 +17,8 @@ router.post(
   validateRequest(createAssignmentSchema),
   assignmentControllers.createAssignment
 );
-router.get("/", assignmentControllers.getAllAssignments);
-router.get("/:id", assignmentControllers.getAssignmentById);
+router.get("/",auth(), assignmentControllers.getAllAssignments);
+router.get("/:id",auth(), assignmentControllers.getAssignmentById);
 router.patch("/:id", assignmentControllers.updateAssignment);
 router.delete("/:id", assignmentControllers.deleteAssignment);
 

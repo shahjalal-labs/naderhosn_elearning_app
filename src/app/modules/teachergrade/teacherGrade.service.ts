@@ -31,9 +31,9 @@ const teacherOverview = async (user: JwtPayload, serchTerm: string) => {
       TeacherGrades: { some: { teacherId: user.id } },
       ...(serchTerm && {
         OR: [
-          { grade: Number(serchTerm) || -1 }, // -1 ensures no match if not a number
+          { grade: { equals: serchTerm } },
           {
-            section: serchTerm.toUpperCase() as keyof typeof SchoolSectionEnum,
+            section: { equals: serchTerm.toUpperCase() as keyof typeof SchoolSectionEnum },
           },
         ],
       }),
