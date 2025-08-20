@@ -1,4 +1,5 @@
 import z from "zod";
+import { AssignmentGrade as PrismaAssignmentGrade } from "@prisma/client";
 
 export const createAssignmentSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -22,3 +23,14 @@ export const updateAssignmentSchema = z.object({
   dueDate: z.string().datetime({ message: "Invalid date format" }).optional(),
 })
 
+export const submitAssignmentSchema = z.object({
+  answer : z.string({required_error : "Answer is required "})
+})
+
+export const gradedAssignmentSchema = z.object({
+  grade: z.nativeEnum(PrismaAssignmentGrade),
+  feedback: z.string().trim().min(1, "Feedback is required"),
+});
+
+// Type helper
+export type GradedAssignmentInput = z.infer<typeof gradedAssignmentSchema>;
