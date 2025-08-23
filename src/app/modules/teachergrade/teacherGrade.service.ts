@@ -33,7 +33,9 @@ const teacherOverview = async (user: JwtPayload, serchTerm: string) => {
         OR: [
           { grade: { equals: serchTerm } },
           {
-            section: { equals: serchTerm.toUpperCase() as keyof typeof SchoolSectionEnum },
+            section: {
+              equals: serchTerm.toUpperCase() as keyof typeof SchoolSectionEnum,
+            },
           },
         ],
       }),
@@ -60,13 +62,16 @@ const getGradesByIdForTeacher = async (
   query: { queryField: GradeQueryFilterTypeForTeacher; searchTerm: string }
 ) => {
   // Check grade exists
-  const gradeData = await prisma.schoolGrades.findUnique({ where: { id } });
+  const gradeData = await prisma.schoolGrades.findUnique({
+    where: { id },
+    include: { school: true },
+  });
   if (!gradeData) {
     throw new ApiError(httpStatus.NOT_FOUND, "Grade not found");
   }
 
   // count for header
-  const [ studentCount, bookCount] = await Promise.all([
+  const [studentCount, bookCount] = await Promise.all([
     prisma.studentGrades.count({ where: { gradeId: id } }),
     prisma.books.count({ where: { gradeId: id } }),
   ]);
@@ -138,12 +143,12 @@ const getGradesByIdForTeacher = async (
       break;
 
     default:
-      extraData = []
+      extraData = [];
       break;
   }
   return {
     totalStudent: studentCount,
-    assignBook : bookCount,
+    assignBook: bookCount,
     gradeData,
     [query.queryField]: extraData,
   };

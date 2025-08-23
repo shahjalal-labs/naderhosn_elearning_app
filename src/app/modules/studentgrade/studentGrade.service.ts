@@ -60,14 +60,7 @@ const getGradesByIdForstudent = async (
       studentId: user.id,
     },
     include :{
-      School : {
-        select :{
-          id : true,
-          name : true,
-          schoolLogo :true,
-          location : true
-        }
-      }
+      School :true
     }
   });
   if (!studentGrade) {
