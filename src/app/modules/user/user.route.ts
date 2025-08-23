@@ -8,7 +8,9 @@ import { parseBodyData } from "../../middlewares/parseBodyData";
 const router = express.Router();
 
 router.get("/get-teachers", auth(UserRole.Admin), UserControllers.getTeachers);
-router.get("/get-students", UserControllers.getStudents);
+router.get("/get-students", auth(UserRole.Admin), UserControllers.getStudents);
+router.get("/download-teachers", auth(UserRole.Admin), UserControllers.downloadTeachers);
+router.get("/download-students",auth(UserRole.Admin), UserControllers.downloadStudents);
 router.get("/single/:id", UserControllers.getSingleUser);
 router.delete(
   "/delete-user/:id",

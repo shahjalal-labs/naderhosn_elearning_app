@@ -1,5 +1,8 @@
 import { Books, PrismaClient } from "@prisma/client";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
+import ApiError from "../../../errors/ApiErrors";
+import httpStatus from "http-status";
+import { sendGroupNotifications } from "../notifications/notification.services";
 const prisma = new PrismaClient();
 
 const createBook = async (
@@ -8,9 +11,22 @@ const createBook = async (
   coverImage: Express.Multer.File,
   BookFile: Express.Multer.File
 ) => {
+  const isGradeExist = await prisma.schoolGrades.findUnique({
+    where: { id: gradeId },
+    include: {
+      StudentGrades: { select: { studentId: true } },
+      TeacherGrades: { select: { teacherId: true } },
+    },
+  });
+
+  if (!isGradeExist) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Grade does not exist, please provide valid grade id");
+  }
+
   const coverImg = (await uploadToDigitalOceanAWS(coverImage)).Location;
   const file = (await uploadToDigitalOceanAWS(BookFile)).Location;
-  return await prisma.books.create({
+
+  await prisma.books.create({
     data: {
       ...data,
       coverImg,
@@ -18,6 +34,23 @@ const createBook = async (
       gradeId,
     },
   });
+
+  // Collect student + teacher ids
+  const userIds = [
+    ...isGradeExist.StudentGrades.map((s) => s.studentId),
+    ...isGradeExist.TeacherGrades.map((t) => t.teacherId),
+  ];
+
+  // Send notifications
+  try {
+    await sendGroupNotifications(
+      userIds,
+      `A new book "${data.bookName}" has been added.`,
+      "New Book Added"
+    );
+  } catch (err) {
+    console.error("Notification failed:", err);
+  }
 };
 
 const getAllBooks = async () => {

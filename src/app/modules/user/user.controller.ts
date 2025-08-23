@@ -77,6 +77,43 @@ const adminOverview = catchAsync(async (req, res) => {
   });
 });
 
+// -------- downlaod ------------ 
+// controller
+const downloadStudents = catchAsync(async (req, res) => {
+  const { school, grade, teacher } = req.query as { [key: string]: any };
+  const query = {
+    school: school === "true",
+    grade: grade === "true",
+    teacher: teacher === "true",
+  };
+
+  const result = await userService.getDownloadStudents(query);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "student download data retrieved successfully",
+    data: result,
+  });
+});
+
+//get users
+const downloadTeachers = catchAsync(async (req, res) => {
+  const { school, grade, teacher, details } = req.query as { [key: string]: any };
+  const query = {
+    school: school === "true",
+    grade: grade === "true",
+    teacher: teacher === "true",
+    details: details === "true",
+  };
+  const users = await userService.getDownloadTeachers(query);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "teacher download retrived successfully",
+    data: users,
+  });
+});
 
 export const UserControllers = {
   getUsers,
@@ -85,5 +122,7 @@ export const UserControllers = {
   deleteUser,
   adminOverview,
   getTeachers,
-  getStudents
+  getStudents,
+  downloadStudents,
+  downloadTeachers
 };

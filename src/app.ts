@@ -27,7 +27,7 @@ app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 app.get("/", (req: Request, res: Response) => {
   res.send({
-    Message: "🎉 Welcome Nadir Hossain E-Learning Backend",
+    Message: "🫡 Hellow there !  Welcome Nadir Hossain E-Learning Backend",
   });
 });
 

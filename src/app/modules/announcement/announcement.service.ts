@@ -1,13 +1,22 @@
 import { Announcments, PrismaClient } from "@prisma/client";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
+import { sendGroupNotifications } from "../notifications/notification.services";
 const prisma = new PrismaClient();
 
 const createAnnouncement = async (gradeId: string, data: Announcments) => {
+  const isGradeExist = await prisma.schoolGrades.findUnique({
+    where :{
+      id : gradeId
+    }
+  })
+  if(!isGradeExist){
+    throw new ApiError(httpStatus.NOT_FOUND, "Grade not Found");
+  }
   const today = new Date();
   const postDate = new Date(data.postdate);
 
-  // Check date is future or today , or throw
+  // Validate postDate
   if (postDate.getTime() < today.setHours(0, 0, 0, 0)) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
@@ -15,17 +24,48 @@ const createAnnouncement = async (gradeId: string, data: Announcments) => {
     );
   }
 
-  //  check isPublished
   const isToday = postDate.toDateString() === new Date().toDateString();
 
-  return await prisma.announcments.create({
+  // Fetch grade users
+  const gradeStudents = await prisma.studentGrades.findMany({
+    where: { gradeId },
+    select: { studentId: true },
+  });
+  const gradeTeachers = await prisma.teacherGrades.findMany({
+    where: { gradeId },
+    select: { teacherId: true },
+  });
+
+  const userIds = [
+    ...gradeStudents.map((s) => s.studentId),
+    ...gradeTeachers.map((t) => t.teacherId),
+  ];
+
+  // Create Announcement
+  const announcement = await prisma.announcments.create({
     data: {
       ...data,
       gradeId,
       isPublished: isToday ? true : false,
     },
   });
+
+  // Send notifications if published today
+  if (isToday) {
+    try {
+      await sendGroupNotifications(
+        userIds,
+        `New Announcement: "${data.title}"`,
+        data.anouncement
+      );
+    } catch (err) {
+      console.error("Failed to send announcement notifications:", err);
+    }
+  }
+
+  return announcement;
 };
+
 
 const getAllAnnouncements = async () => {
   return await prisma.announcments.findMany();

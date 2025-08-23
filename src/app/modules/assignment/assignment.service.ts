@@ -12,6 +12,10 @@ import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAW
 import { JwtPayload } from "jsonwebtoken";
 import { z } from "zod";
 import { gradedAssignmentSchema } from "./assignment.validation";
+import {
+  sendGroupNotifications,
+  sendSingleNotification,
+} from "../notifications/notification.services";
 
 type AssignmentInput = Assignment & {
   studentIds?: string[];
@@ -78,6 +82,16 @@ const createAssignment = async (
       });
     }
 
+    try {
+      await sendGroupNotifications(
+        studentIds,
+        `New assignment "${data.title}" has been assigned to you.`,
+        "New Assignment"
+      );
+    } catch (err) {
+      console.error("Failed to send assignment notifications:", err);
+    }
+
     return assignment;
   });
 };
@@ -130,7 +144,7 @@ const getAssignmentById = async (id: string, user: JwtPayload) => {
       });
 
       const studentsArray = students.map((s) => ({
-        assignmentProgressId : s.id,
+        assignmentProgressId: s.id,
         studentId: s.user.id,
         fullName: s.user.fullName,
         email: s.user.email,
@@ -241,26 +255,45 @@ const updateAssignment = async (
 const submitAssignmentIntoDB = async (
   id: string,
   data: { answer: string },
-  userId: string,
+  user: JwtPayload,
   file?: Express.Multer.File
 ) => {
   const isAssExist = await prisma.assignmentStudent.findFirst({
     where: {
       assignmentId: id,
-      userId,
+      userId: user.id,
+    },
+    include: {
+      assignment: {
+        select: {
+          title: true,
+          grade: {
+            select: {
+              TeacherGrades: {
+                select: {
+                  teacherId: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
   if (!isAssExist) {
     throw new ApiError(httpStatus.NOT_FOUND, "You have No assignment .");
   }
-  if(isAssExist.assignmentStatus === AssignmentStatus.Submitted){
-    throw new ApiError(httpStatus.BAD_REQUEST , " already submitted the assignment")
+  if (isAssExist.assignmentStatus === AssignmentStatus.Submitted) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      " already submitted the assignment"
+    );
   }
   let attachament: string = "";
   if (file) {
     attachament = (await uploadToDigitalOceanAWS(file)).Location;
   }
-  return await prisma.assignmentStudent.update({
+  await prisma.assignmentStudent.update({
     where: {
       id: isAssExist.id,
     },
@@ -268,14 +301,24 @@ const submitAssignmentIntoDB = async (
       studentAnswer: data.answer,
       assignmentStatus: AssignmentStatus.Submitted,
       studentAttachement: attachament,
-      submittedAt : new Date().toISOString()
+      submittedAt: new Date().toISOString(),
     },
   });
+  try {
+    await sendGroupNotifications(
+      isAssExist.assignment.grade.TeacherGrades.map((t) => t.teacherId),
+      `"${user.fullName}" has been submit assignment - ${isAssExist.assignment.title}.`,
+      "submit assignment"
+    );
+  } catch (err) {
+    console.error("Failed to send assignment notifications:", err);
+  }
+  return;
 };
 const gradedAssignmentIntoDB = async (
   id: string,
-  data:z.infer<typeof gradedAssignmentSchema>,
-  user: JwtPayload,
+  data: z.infer<typeof gradedAssignmentSchema>,
+  user: JwtPayload
 ) => {
   const isAssExist = await prisma.assignmentStudent.findFirst({
     where: {
@@ -285,18 +328,27 @@ const gradedAssignmentIntoDB = async (
   if (!isAssExist) {
     throw new ApiError(httpStatus.NOT_FOUND, "The Assignment Not Found .");
   }
-  return await prisma.assignmentStudent.update({
+  await prisma.assignmentStudent.update({
     where: {
       id: isAssExist.id,
     },
     data: {
       assignmentGrade: data.grade,
-      FeedBack : data.feedback,
-      gradedBy : user.fullName
+      FeedBack: data.feedback,
+      gradedBy: user.fullName,
     },
   });
+  try {
+    await sendSingleNotification(
+      isAssExist.userId,
+      `Got Assignment Grade ${data.grade} ,gradby - ${user.fullName} feedback - ${data.feedback}`,
+      user.id,
+      `congratulations , You got assignment result ${data.grade} Grade !}`
+    );
+  } catch (err) {
+    console.error("Failed to send assignment notifications:", err);
+  }
 };
-
 
 const deleteAssignment = async (id: string) => {
   return await prisma.assignment.delete({ where: { id } });
@@ -309,5 +361,5 @@ export const assignmentServices = {
   updateAssignment,
   deleteAssignment,
   submitAssignmentIntoDB,
-  gradedAssignmentIntoDB
+  gradedAssignmentIntoDB,
 };

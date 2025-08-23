@@ -26,7 +26,6 @@ model User {
   fcmToken String?
 
   // Relations
-  notificationRecipient NotificationRecipient[]
   StudentGrades         StudentGrades[]
   Teacher               TeacherGrades[]
   assignments           AssignmentStudent[]
@@ -66,30 +65,18 @@ enum UserRole {
 
 // --------------------------// Noptification -------------------------------------//
 model Notification {
-  id               String                  @id @default(auto()) @map("_id") @db.ObjectId
-  title            String
-  message          String
-  redirectEndpoint String?
-  users            NotificationRecipient[]
-  createdAt        DateTime                @default(now())
-  updatedAt        DateTime                @updatedAt
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  receiverId String?  @db.ObjectId
+  senderId   String?  @db.ObjectId
+  title      String?
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@map("notifications")
 }
 
-model NotificationRecipient {
-  id             String        @id @default(auto()) @map("_id") @db.ObjectId
-  isRead         Boolean       @default(false)
-  receivedAt     DateTime      @default(now())
-  notification   Notification? @relation(fields: [notificationId], references: [id])
-  user           User          @relation(fields: [userId], references: [id])
-  notificationId String        @db.ObjectId
-  userId         String        @db.ObjectId
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  @@map("notificationRecipient")
-}
 
 // --------------------- SCHOOL ----------------------//
 

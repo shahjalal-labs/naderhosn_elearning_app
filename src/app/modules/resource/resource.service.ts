@@ -4,28 +4,48 @@ import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import { JwtPayload } from "jsonwebtoken";
+import { sendGroupNotifications } from "../notifications/notification.services";
 
 const createResource = async (
   data: Resources,
   gradeId: string,
   file: Express.Multer.File,
-  user : JwtPayload
+  user: JwtPayload
 ) => {
   const isGradeExist = await prisma.schoolGrades.findUnique({
     where: { id: gradeId },
+    include: {
+      StudentGrades: {
+        select: {
+          studentId :true
+        },
+      },
+    },
   });
-  if (!isGradeExist)
+  if (!isGradeExist) {
     throw new ApiError(httpStatus.NOT_FOUND, "Grade not found");
+  }
   const fileUpload = (await uploadToDigitalOceanAWS(file)).Location;
-  return await prisma.resources.create({
+  await prisma.resources.create({
     data: {
       ...data,
       gradeId,
       file: fileUpload,
-      uploderName : user.fullName,
-      uplodedBy : user.role
+      uploderName: user.fullName,
+      uplodedBy: user.role,
     },
   });
+  const userIds = isGradeExist.StudentGrades.map(s => s.studentId)
+  try {
+    await sendGroupNotifications(
+      userIds,
+      `New resources Added: "${data.title}"`,
+      data.description
+    );
+  } catch (err) {
+    console.error("Failed to send announcement notifications:", err);
+  }
+  return 
 };
 
 const getAllResources = async () => {
@@ -33,12 +53,17 @@ const getAllResources = async () => {
 };
 
 const getResourceById = async (id: string) => {
-  const res =  await prisma.resources.findUnique({ where: { id } });
-  if(!res) throw new ApiError(httpStatus.NOT_FOUND, "Resource not found");
+  const res = await prisma.resources.findUnique({ where: { id } });
+  if (!res) throw new ApiError(httpStatus.NOT_FOUND, "Resource not found");
+  return res
 };
 
-const updateResource = async (id: string, data: Partial<Resources> , file ?: Express.Multer.File ) => {
-   const isRecourseExist = await prisma.resources.findUnique({
+const updateResource = async (
+  id: string,
+  data: Partial<Resources>,
+  file?: Express.Multer.File
+) => {
+  const isRecourseExist = await prisma.resources.findUnique({
     where: { id },
   });
   if (!isRecourseExist)
@@ -49,7 +74,7 @@ const updateResource = async (id: string, data: Partial<Resources> , file ?: Exp
   }
   return await prisma.resources.update({
     where: {
-      id
+      id,
     },
     data: {
       ...data,
