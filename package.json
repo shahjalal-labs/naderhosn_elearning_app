@@ -1,5 +1,5 @@
 {
-  "name": "pedro-backend",
+  "name": "E-Learning-backend",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
@@ -10,9 +10,9 @@
     "postinstall": "prisma generate"
   },
   "keywords": [],
-  "author": "Mir-Hasan",
+  "author": "roton",
   "license": "ISC",
-  "description": "pedro-backend",
+  "description": "E-Learning-backend",
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
