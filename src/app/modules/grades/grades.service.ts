@@ -20,7 +20,10 @@ const getGradesById = async (
   query: { queryField: GradeQueryFilterType; searchTerm: string }
 ) => {
   // Check grade exists
-  const gradeData = await prisma.schoolGrades.findUnique({ where: { id } });
+  const gradeData = await prisma.schoolGrades.findUnique({
+    where: { id },
+    include: { school: true },
+  });
   if (!gradeData) {
     throw new ApiError(httpStatus.NOT_FOUND, "Grade not found");
   }
@@ -342,7 +345,6 @@ const assignNewStudentIntoDB = async (
 
   return result;
 };
-
 
 export const gradesServices = {
   createGrades,
