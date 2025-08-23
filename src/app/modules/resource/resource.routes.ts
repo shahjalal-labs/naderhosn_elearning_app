@@ -20,8 +20,8 @@ router.post(
   validateRequest(CreateResourceSchema),
   resourceControllers.createResource
 );
-router.get("/", resourceControllers.getAllResources);
-router.get("/:id", resourceControllers.getResourceById);
+router.get("/", auth(), resourceControllers.getAllResources);
+router.get("/:id", auth(), resourceControllers.getResourceById);
 router.patch(
   "/update/:id",
   auth(UserRole.Admin, UserRole.Teacher),
@@ -30,6 +30,10 @@ router.patch(
   validateRequest(UpdateResourceSchema),
   resourceControllers.updateResource
 );
-router.delete("/:id", resourceControllers.deleteResource);
+router.delete(
+  "/:id",
+  auth(UserRole.Admin, UserRole.Teacher),
+  resourceControllers.deleteResource
+);
 
 export const resourceRoutes = router;

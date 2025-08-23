@@ -108,12 +108,12 @@ const getSchoolById = async (id: string) => {
       id: true,
       grade: true,
       section: true,
-      _count :{
-        select : {
-          StudentGrades : true,
-          TeacherGrades : true
-        }
-      }
+      _count: {
+        select: {
+          StudentGrades: true,
+          TeacherGrades: true,
+        },
+      },
     },
   });
 
@@ -178,10 +178,38 @@ const deleteSchool = async (id: string) => {
   return;
 };
 
+// Download 
+const getDownloadSchoolData = async (query: {
+  location: boolean;
+  gradeRange: boolean;
+  count: boolean;
+}) => {
+  return await prisma.school.findMany({
+    select: {
+      id: true,
+      name: true,
+      schoolLogo: true,
+      ...(query.location && { location: true }), 
+      _count: 
+        query.gradeRange || query.count
+          ? {
+              select: {
+                ...(query.gradeRange && { grades: true }),
+                ...(query.count && { StudentGrades: true }),
+                ...(query.count && { Teacher: true }),
+              },
+            }
+          : undefined, 
+    },
+  });
+};
+
+
 export const schoolServices = {
   createSchool,
   getAllSchools,
   getSchoolById,
   updateSchool,
   deleteSchool,
+  getDownloadSchoolData,
 };

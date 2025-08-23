@@ -17,8 +17,9 @@ router.post(
   validateRequest(CreateSchoolSchema),
   schoolControllers.createSchool
 );
-router.get("/", schoolControllers.getAllSchools);
-router.get("/:id", schoolControllers.getSchoolById);
+router.get("/",auth(UserRole.Admin), schoolControllers.getAllSchools);
+router.get("/download-schools",auth(UserRole.Admin), schoolControllers.getDownloadSchoolData);
+router.get("/:id", auth(), schoolControllers.getSchoolById);
 router.patch(
   "/:id",
   auth(UserRole.Admin),

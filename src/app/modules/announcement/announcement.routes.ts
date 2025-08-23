@@ -1,13 +1,26 @@
-import express from 'express';
+import express from "express";
 import { announcementControllers } from "./announcement.controller";
- 
+import auth from "../../middlewares/auth";
+import { UserRole } from "@prisma/client";
+
 const router = express.Router();
- 
-router.post('/:gradeId', announcementControllers.createAnnouncement);
-router.get('/', announcementControllers.getAllAnnouncements);
-router.get('/:id', announcementControllers.getAnnouncementById);
-router.patch('/:id', announcementControllers.updateAnnouncement);
-router.delete('/:id', announcementControllers.deleteAnnouncement);
- 
+
+router.post(
+  "/:gradeId",
+  auth(UserRole.Admin, UserRole.Teacher),
+  announcementControllers.createAnnouncement
+);
+router.get("/", auth(), announcementControllers.getAllAnnouncements);
+router.get("/:id", auth(), announcementControllers.getAnnouncementById);
+router.patch(
+  "/:id",
+  auth(UserRole.Admin, UserRole.Teacher),
+  announcementControllers.updateAnnouncement
+);
+router.delete(
+  "/:id",
+  auth(UserRole.Admin, UserRole.Teacher),
+  announcementControllers.deleteAnnouncement
+);
+
 export const announcementRoutes = router;
-  

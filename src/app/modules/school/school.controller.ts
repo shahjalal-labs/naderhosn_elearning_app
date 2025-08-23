@@ -28,6 +28,21 @@ const getAllSchools = catchAsync(async (_req: Request, res: Response) => {
     data: result,
   });
 })
+const getDownloadSchoolData = catchAsync(async (_req: Request, res: Response) => {
+  const { location, gradeRange, count } = _req.query as { [key: string]: any };
+  const query = {
+    location: location === "true",
+    gradeRange: gradeRange === "true",
+    count: count === "true",
+  };
+  const result = await schoolServices.getDownloadSchoolData(query);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "schools has been retrived for downlod successfully",
+    data: result,
+  });
+})
  
 const getSchoolById = catchAsync(async (req: Request, res: Response) => {
   const result = await schoolServices.getSchoolById(req.params.id);
@@ -64,5 +79,6 @@ export const schoolControllers = {
   getSchoolById,
   updateSchool,
   deleteSchool,
+  getDownloadSchoolData
 }
   

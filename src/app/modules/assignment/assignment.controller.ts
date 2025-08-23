@@ -57,7 +57,7 @@ const submitAssignment = catchAsync(async (req: Request, res: Response) => {
   const result = await assignmentServices.submitAssignmentIntoDB(
     req.params.id,
     req.body,
-    req.user.id,
+    req.user,
     file
   );
   sendResponse(res, {
