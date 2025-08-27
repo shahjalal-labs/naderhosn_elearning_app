@@ -1,9 +1,7 @@
 import {
   Assignment,
   AssignmentStatus,
-  PrismaClient,
   UserRole,
-  User,
 } from "@prisma/client";
 import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
