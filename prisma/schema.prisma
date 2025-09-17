@@ -26,10 +26,9 @@ model User {
   fcmToken String?
 
   // Relations
-  StudentGrades         StudentGrades[]
-  Teacher               TeacherGrades[]
-  assignments           AssignmentStudent[]
-  assignmentId          String?                 @db.ObjectId
+  StudentGrades StudentGrades[]
+  Teacher       TeacherGrades[]
+  assignments   AssignmentStudent[]
 
   @@map("users")
 }
@@ -54,7 +53,6 @@ enum UserStatus {
 enum Gender {
   Male
   Female
-  Other
 }
 
 enum UserRole {
@@ -77,124 +75,131 @@ model Notification {
   @@map("notifications")
 }
 
-
 // --------------------- SCHOOL ----------------------//
 
 model School {
-  id               String         @id @default(auto()) @map("_id") @db.ObjectId
-  name             String
-  location         String
-  expectedTeachers String
-  expectedStudents String
-  schoolLogo       String
-  grades           SchoolGrades[]
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  location       String
+  teacherCount   Int?
+  studentsCount  Int?
+  activeStudents Int?
+  activeTeachers Int?
+  schoolLogo     String
+  grades         Grades[]
 
   // date 
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  Teacher       TeacherGrades[]
-  StudentGrades StudentGrades[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model SchoolGrades {
-  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+model Grades {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
   grade         String
-  section       SchoolSectionEnum
-  schoolId      String            @db.ObjectId
-  school        School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  schoolId      String          @db.ObjectId
+  school        School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   StudentGrades StudentGrades[]
   TeacherGrades TeacherGrades[]
-  Books         Books[]
   gradeSubject  gradeSubject[]
-  Resources     Resources[]
   Assingment    Assignment[]
   Announcments  Announcments[]
+  GradeBooks    GradeBooks[]
 
-  @@unique([schoolId, grade, section])
-}
-
-enum SchoolSectionEnum {
-  A
-  B
-  C
+  @@unique([schoolId, grade])
 }
 
 model gradeSubject {
-  id      String       @id @default(auto()) @map("_id") @db.ObjectId
+  id      String  @id @default(auto()) @map("_id") @db.ObjectId
   subject String?
-  gradeId String       @db.ObjectId
-  grade   SchoolGrades @relation(fields: [gradeId], references: [id])
+  gradeId String  @db.ObjectId
+  grade   Grades  @relation(fields: [gradeId], references: [id])
 
   @@map("gradeSubjects")
 }
 
 //---------------------  Student Grades ---------------------//
 model StudentGrades {
-  id        String       @id @default(auto()) @map("_id") @db.ObjectId
-  studentId String       @db.ObjectId
-  student   User         @relation(fields: [studentId], references: [id])
-  gradeId   String       @db.ObjectId
-  grade     SchoolGrades @relation(fields: [gradeId], references: [id])
-  School    School?      @relation(fields: [schoolId], references: [id])
-  schoolId  String?      @db.ObjectId
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  studentId String @db.ObjectId
+  student   User   @relation(fields: [studentId], references: [id]) 
+  gradeId   String @db.ObjectId
+  grade     Grades @relation(fields: [gradeId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([studentId, gradeId])
   @@map("gradeStudents")
 }
 
 model TeacherGrades {
-  id        String       @id @default(auto()) @map("_id") @db.ObjectId
-  teacherId String       @db.ObjectId
-  teacher   User         @relation(fields: [teacherId], references: [id])
-  gradeId   String       @db.ObjectId
-  grade     SchoolGrades @relation(fields: [gradeId], references: [id])
-  School    School?      @relation(fields: [schoolId], references: [id])
-  schoolId  String?      @db.ObjectId
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  teacherId String @db.ObjectId
+  teacher   User   @relation(fields: [teacherId], references: [id])
+  gradeId   String @db.ObjectId
+  grade     Grades @relation(fields: [gradeId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([teacherId, gradeId, schoolId])
+  @@unique([teacherId, gradeId])
   @@map("GradeTeachers")
+}
+
+model GradeBooks {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  bookId  String @db.ObjectId
+  book    Books  @relation(fields: [bookId], references: [id])
+  gradeId String @db.ObjectId
+  grade   Grades @relation(fields: [gradeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([bookId, gradeId]) // ensure same book-grade pair only once
+  @@map("grade_books")
 }
 
 // ------------------Books ----------------------------////
 
-model Books {
-  id       String       @id @default(auto()) @map("_id") @db.ObjectId
-  gradeId  String       @db.ObjectId
-  grade    SchoolGrades @relation(fields: [gradeId], references: [id])
-  bookName String
-  coverImg String
-  file     String
-  author   String
-  Edition  String
-  language Booklanguage
+model BookCategory {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String
+  image       String?
+  Books       Books[]
+}
 
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  Assignment Assignment[]
+model Books {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  bookName    String
+  description String
+  coverImg    String
+  file        String
+  author      String
+  ISBN        String
+  // Date 
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  // Relations
+  categoryId  String       @db.ObjectId
+  category    BookCategory @relation(fields: [categoryId], references: [id])
+  Assignment  Assignment[]
+  Resources   Resources[]
+  GradeBooks  GradeBooks[]
 
   @@map("gradeBooks")
 }
 
-enum Booklanguage {
-  English
-  Spanish
-  French
-}
-
 // ----------------------------Resources ------------------
 model Resources {
-  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String
-  Type        ResoucresType?
+  Type        ResoucresType
   file        String
-  gradeId     String         @db.ObjectId
-  grade       SchoolGrades   @relation(fields: [gradeId], references: [id])
+  bookId      String        @db.ObjectId
+  book        Books         @relation(fields: [bookId], references: [id])
   uplodedBy   String
   uploderName String
 
@@ -221,7 +226,7 @@ model Assignment {
   attachament String?
   dueDate     DateTime
   gradeId     String              @db.ObjectId
-  grade       SchoolGrades        @relation(fields: [gradeId], references: [id])
+  grade       Grades              @relation(fields: [gradeId], references: [id])
   bookId      String              @db.ObjectId
   book        Books               @relation(fields: [bookId], references: [id])
   students    AssignmentStudent[]
@@ -238,7 +243,7 @@ model AssignmentStudent {
   assignmentId       String           @db.ObjectId
   studentAnswer      String?
   studentAttachement String?
-  assignmentStatus   AssignmentStatus   @default(Pending)
+  assignmentStatus   AssignmentStatus @default(Pending)
   assignmentGrade    AssignmentGrade?
   gradedBy           String?
   FeedBack           String?
@@ -274,13 +279,13 @@ enum AssignmentGrade {
 // --------------------------- announcments -----------------// 
 
 model Announcments {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   anouncement String
   postdate    DateTime
   isPublished Boolean?
-  gradeId     String       @db.ObjectId
-  grade       SchoolGrades @relation(fields: [gradeId], references: [id])
+  gradeId     String   @db.ObjectId
+  grade       Grades   @relation(fields: [gradeId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

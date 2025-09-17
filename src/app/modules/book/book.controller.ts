@@ -3,6 +3,68 @@ import { bookServices } from "./book.service";
 import sendResponse from "../../../shared/sendResponse";
 import catchAsync from "../../../shared/catchAsync";
 
+
+// ------------ product category controllers -------------
+const createBooksCategory = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await bookServices.createBookCategory(req.body);
+    sendResponse(res, {
+      success: true,
+      statusCode: 201,
+      message: "The Books category has been created successfully",
+      data: result,
+    });
+  }
+);
+const deleteBooksCategory = catchAsync(
+  async (req: Request, res: Response) => {
+    await bookServices.deleteBookCategory(req.params.id);
+    sendResponse(res, {
+      success: true,
+      statusCode: 201,
+      message: "The Books category has been deleted successfully",
+    });
+  }
+);
+const getAllBooksCategories = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await bookServices.getAllBookCategories();
+    sendResponse(res, {
+      success: true,
+      statusCode: 201,
+      message: "Books has been retrieved successfully",
+      data: result,
+    });
+  }
+);
+const getBooksCategoryById = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await bookServices.getBookCategoryById(req.params.id);
+    sendResponse(res, {
+      success: true,
+      statusCode: 201,
+      message: "Books category has been retrieved successfully",
+      data: result,
+    });
+  }
+);
+const updateBooksCategory = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await bookServices.updateBookCategory(
+      req.params.id,
+      req.body
+    );
+    sendResponse(res, {
+      success: true,
+      statusCode: 201,
+      message: "The Books category has been updated successfully",
+      data: result,
+    });
+  }
+);
+
+// ------------------ Books ------------------------///
+
 const createBook = catchAsync(async (req: Request, res: Response) => {
   let coverImg: Express.Multer.File | undefined;
   let file: Express.Multer.File | undefined;
@@ -78,4 +140,9 @@ export const bookControllers = {
   getBookById,
   updateBook,
   deleteBook,
+  createBooksCategory,
+  getAllBooksCategories,
+  getBooksCategoryById,
+  updateBooksCategory,
+  deleteBooksCategory
 };

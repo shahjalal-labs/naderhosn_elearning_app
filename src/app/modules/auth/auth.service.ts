@@ -5,8 +5,8 @@ import { jwtHelpers } from "../../../helpers/jwtHelpers";
 import config from "../../../config";
 import { User } from "@prisma/client";
 import generateOTP from "../../../helpers/generateOtp";
-import sendEmail from "../../../helpers/sendEmail";
 import { uploadInSpace } from "../../../shared/UploadHelper";
+import { emailQueue } from "../../../queue/email.queue";
 
 const loginUserIntoDB = async (payload: {
   userName: string;
@@ -152,8 +152,11 @@ const sendForgotPasswordOtpDB = async (payload: string) => {
     <p>Thanks, <br>The Support Team</p>
   </div>
 `;
-  await sendEmail(existringUser.email, subject, html);
-  await prisma.otp.upsert({
+    await emailQueue.add("forgotPasswordOtp", {
+    email: existringUser.email,
+    fullName: existringUser?.fullName ,
+    otp,
+  });  await prisma.otp.upsert({
     where: {
       email: existringUser.email,
     },

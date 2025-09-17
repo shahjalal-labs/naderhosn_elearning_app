@@ -15,3 +15,10 @@ export const UpdateBookSchema = z.object({
   Edition: z.string().optional(),
   language: BooklanguageEnum.optional(),
 });
+
+
+export const BookCategorySchema = z.object({
+  name : z.string().min(1, "Book category name is required"),
+  description : z.string().min(1, "Book category description is required"),
+  image : z.string().optional()
+})

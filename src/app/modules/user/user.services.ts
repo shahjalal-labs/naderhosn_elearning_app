@@ -213,7 +213,6 @@ const getDownloadStudents = async (query: {
   });
 };
 
-
 const getDownloadTeachers = async (query: {
   school: boolean;
   details: boolean;
@@ -256,7 +255,6 @@ const getDownloadTeachers = async (query: {
     ...(query.school && tg.School && { school: tg.School }),
   }));
 };
-
 
 export const userService = {
   getUsers,

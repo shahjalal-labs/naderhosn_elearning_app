@@ -1,9 +1,30 @@
-import { Books, PrismaClient } from "@prisma/client";
+import {  BookCategory, Books } from "@prisma/client";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import { sendGroupNotifications } from "../notifications/notification.services";
-const prisma = new PrismaClient();
+import prisma from "../../../shared/prisma";
+
+// ---------------------- Book category Services ------------------ //
+const createBookCategory = async (data: BookCategory) => {
+  return await prisma.bookCategory.create({ data });
+};
+
+const getAllBookCategories = async () => {
+  return await prisma.bookCategory.findMany();
+};
+
+const getBookCategoryById = async (id: string) => {
+  return await prisma.bookCategory.findUnique({ where: { id } });
+};
+
+const updateBookCategory = async (id: string, data: any) => {
+  return await prisma.bookCategory.update({ where: { id }, data });
+};
+
+const deleteBookCategory = async (id: string) => {
+  return await prisma.bookCategory.delete({ where: { id } });
+};
 
 const createBook = async (
   gradeId: string,
@@ -99,4 +120,9 @@ export const bookServices = {
   getBookById,
   updateBook,
   deleteBook,
+  createBookCategory,
+  getAllBookCategories,
+  getBookCategoryById,
+  updateBookCategory,
+  deleteBookCategory
 };

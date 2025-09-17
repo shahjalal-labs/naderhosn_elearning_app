@@ -6,6 +6,8 @@ import router from "./app/routes";
 import GlobalErrorHandler from "./app/middlewares/globalErrorHandler";
 import { PrismaClient } from "@prisma/client";
 import path from "path";
+import { bullBoardRouter } from "./bullBoard";
+import basicAuth from "express-basic-auth"
 
 const app: Application = express();
 const prisma = new PrismaClient();
@@ -30,6 +32,14 @@ app.get("/", (req: Request, res: Response) => {
     Message: "🫡 Hellow there !  Welcome Nadir Hossain E-Learning Backend",
   });
 });
+app.use(
+  "/admin/queues",
+  basicAuth({
+    users: { admin: process.env.BULLBOARD_PASSWORD || "supersecret" },
+    challenge: true,
+  }),
+  bullBoardRouter
+);
 
 app.use("/api/v1", router);
 app.use(GlobalErrorHandler);

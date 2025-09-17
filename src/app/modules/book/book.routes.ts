@@ -3,11 +3,46 @@ import { bookControllers } from "./book.controller";
 import { fileUploader } from "../../../helpers/fileUploadHelper";
 import { parseBodyData } from "../../middlewares/parseBodyData";
 import validateRequest from "../../middlewares/validateRequest";
-import { CreateBookSchema, UpdateBookSchema } from "./book.validation";
+import {
+  BookCategorySchema,
+  CreateBookSchema,
+  UpdateBookSchema,
+} from "./book.validation";
 import auth from "../../middlewares/auth";
 import { UserRole } from "@prisma/client";
 
 const router = express.Router();
+
+// --------- Books Category Routes --------- //
+
+router.post(
+  "/categories",
+  auth(UserRole.Admin),
+  validateRequest(BookCategorySchema),
+  bookControllers.createBooksCategory
+);
+router.get(
+  "/categories",
+  auth(UserRole.Admin),
+  bookControllers.getAllBooksCategories
+);
+router.get(
+  "/categories/:id",
+  auth(UserRole.Admin),
+  bookControllers.getBooksCategoryById
+);
+router.patch(
+  "/categories/:id",
+  auth(UserRole.Admin),
+  bookControllers.updateBooksCategory
+);
+router.delete(
+  "/categories/:id",
+  auth(UserRole.Admin),
+  bookControllers.deleteBooksCategory
+);
+
+// ---------- Books -------------------//
 
 router.post(
   "/create-book/:gradeId",
