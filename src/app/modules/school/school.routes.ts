@@ -18,6 +18,7 @@ router.post(
   schoolControllers.createSchool
 );
 router.get("/",auth(UserRole.Admin), schoolControllers.getAllSchools);
+router.get("/books-for-forms",auth(UserRole.Admin), schoolControllers.getAllSchoolsForForms);
 router.get("/download-schools",auth(UserRole.Admin), schoolControllers.getDownloadSchoolData);
 router.get("/:id", auth(), schoolControllers.getSchoolById);
 router.patch(

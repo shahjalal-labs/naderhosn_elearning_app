@@ -8,43 +8,47 @@ import { sendGroupNotifications } from "../notifications/notification.services";
 
 const createResource = async (
   data: Resources,
-  gradeId: string,
+  bookId: string,
   file: Express.Multer.File,
   user: JwtPayload
 ) => {
-  const isGradeExist = await prisma.schoolGrades.findUnique({
-    where: { id: gradeId },
+  const isBookExist = await prisma.books.findUnique({
+    where: { id: bookId },
     include: {
-      StudentGrades: {
-        select: {
-          studentId :true
-        },
-      },
+      GradeBooks : {
+        include :{
+          grade : {
+            include :{
+              StudentGrades : true
+            }
+          }
+        }
+      }
     },
   });
-  if (!isGradeExist) {
+  if (!isBookExist) {
     throw new ApiError(httpStatus.NOT_FOUND, "Grade not found");
   }
   const fileUpload = (await uploadToDigitalOceanAWS(file)).Location;
   await prisma.resources.create({
     data: {
       ...data,
-      gradeId,
+      bookId,
       file: fileUpload,
       uploderName: user.fullName,
       uplodedBy: user.role,
     },
   });
-  const userIds = isGradeExist.StudentGrades.map(s => s.studentId)
-  try {
-    await sendGroupNotifications(
-      userIds,
-      `New resources Added: "${data.title}"`,
-      data.description
-    );
-  } catch (err) {
-    console.error("Failed to send announcement notifications:", err);
-  }
+  // const userIds = isBookExist.GradeBooks.flatMap(s => s.grade.StudentGrades.map(s => s.id));
+  // try {
+  //   await sendGroupNotifications(
+  //     userIds,
+  //     `New resources Added: "${data.title}"`,
+  //     data.description
+  //   );
+  // } catch (err) {
+  //   console.error("Failed to send announcement notifications:", err);
+  // }
   return 
 };
 

@@ -6,12 +6,12 @@ import ApiError from '../../../errors/ApiErrors';
 import httpStatus from 'http-status';
  
 const createResource = catchAsync (async (req: Request, res: Response) => {
-  const {gradeId}  = req.params
+  const {bookId}  = req.params
   const resourcesFile = req.file
   if(!resourcesFile){
     throw new ApiError(httpStatus.BAD_REQUEST , "Resources are missing ")
   }
-  const result = await resourceServices.createResource(req.body , gradeId , resourcesFile , req.user);
+  const result = await resourceServices.createResource(req.body , bookId , resourcesFile , req.user);
   sendResponse(res, {
     success: true,
     statusCode: 201,

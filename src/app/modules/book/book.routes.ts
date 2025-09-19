@@ -1,6 +1,6 @@
 import express from "express";
 import { bookControllers } from "./book.controller";
-import { fileUploader } from "../../../helpers/fileUploadHelper";
+import { fileUploader } from '../../../helpers/fileUploadHelper';
 import { parseBodyData } from "../../middlewares/parseBodyData";
 import validateRequest from "../../middlewares/validateRequest";
 import {
@@ -18,6 +18,8 @@ const router = express.Router();
 router.post(
   "/categories",
   auth(UserRole.Admin),
+  fileUploader.uploadSingle,
+  parseBodyData,
   validateRequest(BookCategorySchema),
   bookControllers.createBooksCategory
 );
@@ -34,6 +36,8 @@ router.get(
 router.patch(
   "/categories/:id",
   auth(UserRole.Admin),
+  fileUploader.uploadSingle,
+  parseBodyData,
   bookControllers.updateBooksCategory
 );
 router.delete(
@@ -44,8 +48,10 @@ router.delete(
 
 // ---------- Books -------------------//
 
+router.post("/upload-file", auth(UserRole.Admin) , fileUploader.uploadSingle , bookControllers.uploadResourcesFile)
+
 router.post(
-  "/create-book/:gradeId",
+  "/create-book",
   auth(UserRole.Admin),
   fileUploader.uploadBooks,
   parseBodyData,

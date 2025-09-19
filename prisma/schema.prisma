@@ -100,7 +100,7 @@ model Grades {
   school        School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   StudentGrades StudentGrades[]
   TeacherGrades TeacherGrades[]
-  gradeSubject  gradeSubject[]
+  // gradeSubject  gradeSubject[]
   Assingment    Assignment[]
   Announcments  Announcments[]
   GradeBooks    GradeBooks[]
@@ -108,20 +108,20 @@ model Grades {
   @@unique([schoolId, grade])
 }
 
-model gradeSubject {
-  id      String  @id @default(auto()) @map("_id") @db.ObjectId
-  subject String?
-  gradeId String  @db.ObjectId
-  grade   Grades  @relation(fields: [gradeId], references: [id])
+// model gradeSubject {
+//   id      String  @id @default(auto()) @map("_id") @db.ObjectId
+//   subject String?
+//   gradeId String  @db.ObjectId
+//   grade   Grades  @relation(fields: [gradeId], references: [id])
 
-  @@map("gradeSubjects")
-}
+//   @@map("gradeSubjects")
+// }
 
 //---------------------  Student Grades ---------------------//
 model StudentGrades {
   id        String @id @default(auto()) @map("_id") @db.ObjectId
   studentId String @db.ObjectId
-  student   User   @relation(fields: [studentId], references: [id]) 
+  student   User   @relation(fields: [studentId], references: [id])
   gradeId   String @db.ObjectId
   grade     Grades @relation(fields: [gradeId], references: [id])
 
@@ -168,16 +168,19 @@ model BookCategory {
   description String
   image       String?
   Books       Books[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Books {
   id          String       @id @default(auto()) @map("_id") @db.ObjectId
   bookName    String
   description String
+  ISBN        String
+  author      String
   coverImg    String
   file        String
-  author      String
-  ISBN        String
   // Date 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

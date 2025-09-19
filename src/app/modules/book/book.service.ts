@@ -1,77 +1,169 @@
-import {  BookCategory, Books } from "@prisma/client";
+import { BookCategory, Books, ResoucresType } from "@prisma/client";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
-import { sendGroupNotifications } from "../notifications/notification.services";
 import prisma from "../../../shared/prisma";
+import getModelKeys from "../../../helpers/getModelKeys";
+import QueryBuilder from "../../builder/QueryBuilder";
+import { bookData } from "./const";
+import { JwtPayload } from "jsonwebtoken";
 
 // ---------------------- Book category Services ------------------ //
-const createBookCategory = async (data: BookCategory) => {
-  return await prisma.bookCategory.create({ data });
+const createBookCategory = async (
+  data: BookCategory,
+  file: Express.Multer.File
+) => {
+  const isExist = await prisma.bookCategory.findFirst({
+    where: { name: data.name },
+  });
+  if (isExist) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Book category already exist");
+  }
+  const { Location } = await uploadToDigitalOceanAWS(file);
+  return await prisma.bookCategory.create({
+    data: { ...data, image: Location },
+  });
 };
 
-const getAllBookCategories = async () => {
-  return await prisma.bookCategory.findMany();
+const getAllBookCategories = async (query: any) => {
+  const keys = await getModelKeys("bookCategory");
+  const bookCategoryQuery = new QueryBuilder(prisma.bookCategory, query, keys);
+  const result = await bookCategoryQuery
+    .search(["name", "description"])
+    .filter()
+    .sort()
+    .fields()
+    .exclude()
+    .paginate()
+    .include()
+    .execute();
+  const pagination = await bookCategoryQuery.countTotal();
+  return {
+    meta: pagination,
+    result,
+  };
 };
 
 const getBookCategoryById = async (id: string) => {
   return await prisma.bookCategory.findUnique({ where: { id } });
 };
 
-const updateBookCategory = async (id: string, data: any) => {
-  return await prisma.bookCategory.update({ where: { id }, data });
+const updateBookCategory = async (
+  id: string,
+  data: any,
+  file?: Express.Multer.File
+) => {
+  const isExist = await prisma.bookCategory.findUnique({ where: { id } });
+  if (!isExist) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Book category not found");
+  }
+  let image = isExist.image;
+  if (file) {
+    image = (await uploadToDigitalOceanAWS(file)).Location;
+  }
+  const res = await prisma.bookCategory.update({
+    where: { id },
+    data: {
+      ...data,
+      image,
+    },
+  });
+  return res;
 };
 
 const deleteBookCategory = async (id: string) => {
-  return await prisma.bookCategory.delete({ where: { id } });
+  const isExist = await prisma.bookCategory.findUnique({ where: { id } });
+  if (!isExist) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Book category not found");
+  }
+  await prisma.bookCategory.delete({ where: { id } });
 };
 
-const createBook = async (
-  gradeId: string,
-  data: Books,
-  coverImage: Express.Multer.File,
-  BookFile: Express.Multer.File
-) => {
-  const isGradeExist = await prisma.schoolGrades.findUnique({
-    where: { id: gradeId },
-    include: {
-      StudentGrades: { select: { studentId: true } },
-      TeacherGrades: { select: { teacherId: true } },
-    },
-  });
+// ----------------- Books ------------------------------//
 
-  if (!isGradeExist) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Grade does not exist, please provide valid grade id");
+const createBook = async (
+  bodyData: bookData,
+  coverImage: Express.Multer.File,
+  bookPdf: Express.Multer.File,
+  user: JwtPayload
+) => {
+  const { BookData, Resources, Grades } = bodyData;
+
+  // 1. Upload cover & pdf files
+  let coverImg;
+  let file;
+  try {
+    coverImg = (await uploadToDigitalOceanAWS(coverImage)).Location;
+    file = (await uploadToDigitalOceanAWS(bookPdf)).Location;
+  } catch (error: any) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "File upload failed");
   }
 
-  const coverImg = (await uploadToDigitalOceanAWS(coverImage)).Location;
-  const file = (await uploadToDigitalOceanAWS(BookFile)).Location;
+  // check is category exist
+  const isCategoryExist = await prisma.bookCategory.findUnique({
+    where: { id: BookData.categoryId },
+  });
+  if (!isCategoryExist) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Book Category not found");
+  }
 
-  await prisma.books.create({
+  // 2. Create Book
+  const book = await prisma.books.create({
     data: {
-      ...data,
+      bookName: BookData.bookName,
+      author: BookData.author,
+      description: BookData.description ?? "",
+      ISBN: BookData.ISBN ?? "",
       coverImg,
       file,
-      gradeId,
+      categoryId: BookData.categoryId,
     },
   });
 
-  // Collect student + teacher ids
-  const userIds = [
-    ...isGradeExist.StudentGrades.map((s) => s.studentId),
-    ...isGradeExist.TeacherGrades.map((t) => t.teacherId),
-  ];
-
-  // Send notifications
-  try {
-    await sendGroupNotifications(
-      userIds,
-      `A new book "${data.bookName}" has been added.`,
-      "New Book Added"
-    );
-  } catch (err) {
-    console.error("Notification failed:", err);
+  // 3. Insert Resources
+  if (Resources?.length) {
+    await prisma.resources.createMany({
+      data: Resources.map((r) => ({
+        title: r.title,
+        description: r.description,
+        file: r.file,
+        Type: r.type as ResoucresType,
+        bookId: book.id,
+        uplodedBy: user.role,
+        uploderName: user.fullName,
+      })),
+    });
   }
+
+  // 4. Attach Grades
+  if (Grades?.length) {
+    const gradeIds = Grades.flatMap((g) => g.grade);
+
+    // validate
+    const validGrades = await prisma.grades.findMany({
+      where: { id: { in: gradeIds } },
+      select: { id: true },
+    });
+    const validGradeIds = validGrades.map((g) => g.id);
+
+    // invalid হলে error
+    const invalid = gradeIds.filter((gid) => !validGradeIds.includes(gid));
+    if (invalid.length > 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Invalid grade IDs: ${invalid.join(", ")}`
+      );
+    }
+
+    await prisma.gradeBooks.createMany({
+      data: validGradeIds.map((gid) => ({
+        bookId: book.id,
+        gradeId: gid,
+      })),
+    });
+  }
+
+  return book;
 };
 
 const getAllBooks = async () => {
@@ -79,39 +171,109 @@ const getAllBooks = async () => {
 };
 
 const getBookById = async (id: string) => {
-  const res =  await prisma.books.findUnique({ where: { id }, include:{
-    grade: {
-      select: {
-        grade:true
-      }
-    }
-  } });
-  if(!res){
+  const res = await prisma.books.findUnique({
+    where: { id },
+    include: {
+      category: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          description: true,
+        },
+      },
+      Resources : true
+    },
+  });
+  if (!res) {
     throw new Error("Book not found");
   }
-  return res
+  return res;
 };
 
 const updateBook = async (
   bookId: string,
-  data: Partial<Books>,
+  bodyData: {
+    BookData: Partial<Books>;
+    NewGradesAssign?: { schoolId: string; grade: string[] }[];
+    deletedGrades?: string[];
+  },
   coverImage?: Express.Multer.File,
   BookFile?: Express.Multer.File
 ) => {
-  const coverImg = coverImage ? (await uploadToDigitalOceanAWS(coverImage)).Location : undefined;
-  const file = BookFile ? (await uploadToDigitalOceanAWS(BookFile)).Location : undefined;
+  const { BookData, NewGradesAssign, deletedGrades } = bodyData;
+
+  const isExist = await prisma.books.findUnique({ where: { id: bookId } });
+  if (!isExist) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Book not found");
+  }
+
+  // Upload files if provided
+  const coverImg = coverImage
+    ? (await uploadToDigitalOceanAWS(coverImage)).Location
+    : undefined;
+  const file = BookFile
+    ? (await uploadToDigitalOceanAWS(BookFile)).Location
+    : undefined;
+
+  // Unassign deleted grades
+  if (deletedGrades?.length) {
+    await prisma.gradeBooks.deleteMany({
+      where: { bookId, gradeId: { in: deletedGrades } },
+    });
+  }
+
+  // Assign new grades
+  if (NewGradesAssign?.length) {
+    const gradeIds = NewGradesAssign.flatMap((g) => g.grade);
+
+    const validGrades = await prisma.grades.findMany({
+      where: { id: { in: gradeIds } },
+      select: { id: true },
+    });
+    const validGradeIds = validGrades.map((g) => g.id);
+
+    const invalid = gradeIds.filter((id) => !validGradeIds.includes(id));
+    if (invalid.length > 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Invalid grade IDs: ${invalid.join(", ")}`
+      );
+    }
+
+    // Remove duplicates if any
+    await prisma.gradeBooks.deleteMany({
+      where: { bookId, gradeId: { in: validGradeIds } },
+    });
+
+    await prisma.gradeBooks.createMany({
+      data: validGradeIds.map((gradeId) => ({ bookId, gradeId })),
+    });
+  }
+
+  // Update book fields
   return await prisma.books.update({
-    where : {id : bookId},
+    where: { id: bookId },
     data: {
-      ...data,
+      ...BookData,       // Only the actual fields of books
       ...(coverImg && { coverImg }),
       ...(file && { file }),
     },
   });
 };
 
+
 const deleteBook = async (id: string) => {
   return await prisma.books.delete({ where: { id } });
+};
+const uploadResourcesFile = async (file: Express.Multer.File) => {
+  console.log(file);
+  try {
+    const uploadeFile = (await uploadToDigitalOceanAWS(file)).Location;
+    return { url: uploadeFile };
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "File uploading issue ");
+  }
 };
 
 export const bookServices = {
@@ -124,5 +286,6 @@ export const bookServices = {
   getAllBookCategories,
   getBookCategoryById,
   updateBookCategory,
-  deleteBookCategory
+  deleteBookCategory,
+  uploadResourcesFile,
 };

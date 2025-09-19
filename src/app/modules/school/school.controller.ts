@@ -8,7 +8,7 @@ import httpStatus from 'http-status';
 const createSchool = catchAsync (async (req: Request, res: Response) => {
   const file = req.file
   if (!file) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "School logo is missing");
+    throw new ApiError(httpStatus.BAD_REQUEST, "School Photo is missing");
   }
   const result = await schoolServices.createSchool(req.body , file);
   sendResponse(res, {
@@ -28,6 +28,16 @@ const getAllSchools = catchAsync(async (_req: Request, res: Response) => {
     data: result,
   });
 })
+const getAllSchoolsForForms = catchAsync(async (_req: Request, res: Response) => {
+  const result = await schoolServices.getAllSchoolsForForms(); 
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "All schools has been retrived successfully",
+    data: result,
+  });
+})
+
 const getDownloadSchoolData = catchAsync(async (_req: Request, res: Response) => {
   const { location, gradeRange, count } = _req.query as { [key: string]: any };
   const query = {
@@ -44,7 +54,8 @@ const getDownloadSchoolData = catchAsync(async (_req: Request, res: Response) =>
   });
 })
  
-const getSchoolById = catchAsync(async (req: Request, res: Response) => {
+const getSchoolById = catchAsync(async (req: Request, res: Response) => { 
+  // TODO
   const result = await schoolServices.getSchoolById(req.params.id);
   sendResponse(res, {
     success: true,
@@ -79,6 +90,7 @@ export const schoolControllers = {
   getSchoolById,
   updateSchool,
   deleteSchool,
-  getDownloadSchoolData
+  getDownloadSchoolData,
+  getAllSchoolsForForms
 }
   

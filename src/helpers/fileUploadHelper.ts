@@ -38,7 +38,7 @@ const uploadMultiple = upload.fields([
 ]);
 const uploadBooks = upload.fields([
   { name: "coverImage", maxCount: 1 },
-  { name: "file", maxCount: 1 },
+  { name: "bookPdf", maxCount: 1 },
 ]);
 
 export const fileUploader = {

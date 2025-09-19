@@ -13,7 +13,7 @@ import {
 const router = express.Router();
 
 router.post(
-  "/create/:gradeId",
+  "/create/:bookId",
   auth(UserRole.Admin, UserRole.Teacher),
   fileUploader.uploadSingle,
   parseBodyData,

@@ -1,4 +1,4 @@
-import { School } from "@prisma/client";
+import { Prisma, School } from "@prisma/client";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
@@ -6,17 +6,53 @@ import prisma from "../../../shared/prisma";
 import getModelKeys from "../../../helpers/getModelKeys";
 import QueryBuilder from "../../builder/QueryBuilder";
 
-const createSchool = async (data: any, file: Express.Multer.File) => {
-  const { grades, name, location, expectedTeachers, expectedStudents } = data;
+type CreateGradeInput = {
+  gradeLevel: string;
+};
+
+// Extend School create input with grades
+type CreateSchoolInput = Pick<
+  Prisma.SchoolCreateInput,
+  | "name"
+  | "location"
+  | "activeStudents"
+  | "activeTeachers"
+  | "studentsCount"
+  | "teacherCount"
+> & {
+  grades: CreateGradeInput[];
+};
+
+const createSchool = async (
+  data: CreateSchoolInput,
+  file: Express.Multer.File
+) => {
+  const {
+    name,
+    location,
+    activeStudents,
+    activeTeachers,
+    studentsCount,
+    teacherCount,
+    grades,
+  } = data;
+
+  const isExist = await prisma.school.findFirst({
+    where: { name, location },
+  });
+  if (isExist) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "School already exists");
+  }
+
   let schoolLogo: string;
 
   const seen = new Set();
   for (const g of grades) {
-    const key = `${g.grade}-${g.section}`;
+    const key = `${g.gradeLevel}`;
     if (seen.has(key)) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `Duplicate grade-section found: Grade ${g.grade} Section ${g.section}`
+        `Duplicate grade-section found: Grade ${g.gradeLevel}`
       );
     }
     seen.add(key);
@@ -34,22 +70,15 @@ const createSchool = async (data: any, file: Express.Multer.File) => {
     data: {
       name,
       location,
-      expectedTeachers,
-      expectedStudents,
+      activeStudents,
+      activeTeachers,
+      studentsCount,
+      teacherCount,
       schoolLogo,
       grades: {
         create: grades.map((g: any) => ({
-          grade: g.grade,
-          section: g.section,
-          gradeSubject: { create: [] },
+          grade: g.gradeLevel,
         })),
-      },
-    },
-    include: {
-      grades: {
-        include: {
-          gradeSubject: true,
-        },
       },
     },
   });
@@ -65,7 +94,17 @@ const getAllSchools = async (query: any) => {
     .fields()
     .exclude()
     .paginate()
-    .include({ grades: true })
+    .include({
+      grades: {
+        include: {
+          GradeBooks: {
+            include : {
+              "book" : true
+            }
+          },
+        },
+      },
+    })
     .execute();
   const pagination = await usersQuery.countTotal();
   return {
@@ -88,7 +127,7 @@ const getSchoolById = async (id: string) => {
     throw new ApiError(httpStatus.NOT_FOUND, "School not found");
   }
 
-  const gradeStats = await prisma.schoolGrades.aggregate({
+  const gradeStats = await prisma.grades.aggregate({
     where: { schoolId: id },
     _min: { grade: true },
     _max: { grade: true },
@@ -102,12 +141,11 @@ const getSchoolById = async (id: string) => {
     where: { grade: { schoolId: id } },
   });
 
-  const grades = await prisma.schoolGrades.findMany({
+  const grades = await prisma.grades.findMany({
     where: { schoolId: id },
     select: {
       id: true,
       grade: true,
-      section: true,
       _count: {
         select: {
           StudentGrades: true,
@@ -130,24 +168,24 @@ const getSchoolById = async (id: string) => {
 
 const updateSchool = async (
   id: string,
-  data: School,
+  data: { schoolData: any; DeleteGrades: string[]; grades: any[] },
   file?: Express.Multer.File
 ) => {
-  //  Check if school exists
+  // 1. Check if school exists
   const isExist = await prisma.school.findUnique({
     where: { id },
-    include: { grades: { include: { gradeSubject: true } } },
+    include: { grades: true },
   });
 
   if (!isExist) {
     throw new ApiError(httpStatus.NOT_FOUND, "School not found");
   }
 
-  //  file upload
+  // 2. File upload (if provided)
   if (file) {
     try {
       const schoolLogo = (await uploadToDigitalOceanAWS(file)).Location;
-      data.schoolLogo = schoolLogo;
+      data.schoolData.schoolLogo = schoolLogo;
     } catch (error) {
       throw new ApiError(
         httpStatus.NOT_ACCEPTABLE,
@@ -156,15 +194,45 @@ const updateSchool = async (
     }
   }
 
-  // Update school
+  // 3. Update school basic info
   await prisma.school.update({
     where: { id },
-    data: data,
-    include: {
-      grades: { include: { gradeSubject: true } },
+    data: {
+      name: data.schoolData.name,
+      location: data.schoolData.location,
+      teacherCount: data.schoolData.teacherCount,
+      studentsCount: data.schoolData.studentsCount,
+      activeStudents: data.schoolData.activeStudents,
+      activeTeachers: data.schoolData.activeTeachers,
+      schoolLogo: data.schoolData.schoolLogo,
     },
   });
-  return;
+
+  // 4. Delete grades
+  if (data.DeleteGrades && data.DeleteGrades.length > 0) {
+    await prisma.grades.deleteMany({
+      where: {
+        id: { in: data.DeleteGrades },
+        schoolId: id,
+      },
+    });
+  }
+
+  // 5. Add new grades
+  if (data.grades && data.grades.length > 0) {
+    await prisma.grades.createMany({
+      data: data.grades.map((g) => ({
+        grade: g.gradeLevel,
+        schoolId: id,
+      })),
+    });
+  }
+
+  // 6. Return updated school with grades
+  return await prisma.school.findUnique({
+    where: { id },
+    include: { grades: true },
+  });
 };
 
 const deleteSchool = async (id: string) => {
@@ -178,7 +246,7 @@ const deleteSchool = async (id: string) => {
   return;
 };
 
-// Download 
+// Download
 const getDownloadSchoolData = async (query: {
   location: boolean;
   gradeRange: boolean;
@@ -189,8 +257,8 @@ const getDownloadSchoolData = async (query: {
       id: true,
       name: true,
       schoolLogo: true,
-      ...(query.location && { location: true }), 
-      _count: 
+      ...(query.location && { location: true }),
+      _count:
         query.gradeRange || query.count
           ? {
               select: {
@@ -199,11 +267,25 @@ const getDownloadSchoolData = async (query: {
                 ...(query.count && { Teacher: true }),
               },
             }
-          : undefined, 
+          : undefined,
     },
   });
 };
 
+const getAllSchoolsForForms = async () => {
+  return await prisma.school.findMany({
+    select: {
+      id: true,
+      name: true,
+      grades : {
+        select :{
+          id : true,
+          grade : true
+        }
+      }
+    },
+  });
+}
 
 export const schoolServices = {
   createSchool,
@@ -212,4 +294,5 @@ export const schoolServices = {
   updateSchool,
   deleteSchool,
   getDownloadSchoolData,
+  getAllSchoolsForForms
 };
