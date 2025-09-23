@@ -96,11 +96,20 @@ const createBook = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllBooks = catchAsync(async (_req: Request, res: Response) => {
-  const result = await bookServices.getAllBooks();
+  const result = await bookServices.getAllBooks(_req.query);
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "All books has been retrived successfully",
+    data: result,
+  });
+});
+const getAllBooksForForms = catchAsync(async (_req: Request, res: Response) => {
+  const result = await bookServices.getAllBooksForForm();
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "All books for form has been retrived successfully",
     data: result,
   });
 });
@@ -173,4 +182,5 @@ export const bookControllers = {
   updateBooksCategory,
   deleteBooksCategory,
   uploadResourcesFile,
+  getAllBooksForForms
 };

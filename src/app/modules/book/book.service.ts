@@ -166,7 +166,27 @@ const createBook = async (
   return book;
 };
 
-const getAllBooks = async () => {
+const getAllBooks = async (query: any) => {
+  const keys = await getModelKeys("books");
+  const booksQuery = new QueryBuilder(prisma.books, query, keys);
+  const result = await booksQuery
+    .search(["bookName"])
+    .filter()
+    .sort()
+    .fields()
+    .exclude()
+    .paginate()
+    .include({
+      category : true
+    })
+    .execute();
+  const pagination = await booksQuery.countTotal();
+  return {
+    meta: pagination,
+    result,
+  };
+};
+const getAllBooksForForm = async () => {
   return await prisma.books.findMany();
 };
 
@@ -182,7 +202,7 @@ const getBookById = async (id: string) => {
           description: true,
         },
       },
-      Resources : true
+      Resources: true,
     },
   });
   if (!res) {
@@ -255,13 +275,12 @@ const updateBook = async (
   return await prisma.books.update({
     where: { id: bookId },
     data: {
-      ...BookData,       // Only the actual fields of books
+      ...BookData, // Only the actual fields of books
       ...(coverImg && { coverImg }),
       ...(file && { file }),
     },
   });
 };
-
 
 const deleteBook = async (id: string) => {
   return await prisma.books.delete({ where: { id } });
@@ -288,4 +307,5 @@ export const bookServices = {
   updateBookCategory,
   deleteBookCategory,
   uploadResourcesFile,
+  getAllBooksForForm,
 };

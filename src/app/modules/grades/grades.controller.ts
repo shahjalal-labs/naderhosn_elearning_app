@@ -60,40 +60,40 @@ const deleteGrades = catchAsync(async (req: Request, res: Response) => {
 })
 
 // ------------------------ Asign Teacher ------------// 
-const assignTeacher = catchAsync(async (req: Request, res: Response) => {
-  const file = req.file
-  if(!file){
-    throw new ApiError(httpStatus.BAD_REQUEST , "Teacher Profile photo is required ")
-  }
-  await gradesServices.assignTeacherIntoDB(req.body , file);
-  sendResponse(res, {
-    success: true,
-    statusCode: 201,
-    message: "Teacher has been assing successfully",
-  });
-})
-const assignExistingTeacher = catchAsync(async (req: Request, res: Response) => {
-  await gradesServices.assignExistingTeacherIntoDB(req.body);
-  sendResponse(res, {
-    success: true,
-    statusCode: 201,
-    message: "Teacher has been assing successfully",
-  });
-})
+// const assignTeacher = catchAsync(async (req: Request, res: Response) => {
+//   const file = req.file
+//   if(!file){
+//     throw new ApiError(httpStatus.BAD_REQUEST , "Teacher Profile photo is required ")
+//   }
+//   await gradesServices.assignTeacherIntoDB(req.body , file);
+//   sendResponse(res, {
+//     success: true,
+//     statusCode: 201,
+//     message: "Teacher has been assing successfully",
+//   });
+// })
+// const assignExistingTeacher = catchAsync(async (req: Request, res: Response) => {
+//   await gradesServices.assignExistingTeacherIntoDB(req.body);
+//   sendResponse(res, {
+//     success: true,
+//     statusCode: 201,
+//     message: "Teacher has been assing successfully",
+//   });
+// })
 
-// --------------- assign Student in Grade -----------------//
-const assignNewStudent = catchAsync(async (req: Request, res: Response) => {
-  const file = req.file
-  if(!file){
-    throw new ApiError(httpStatus.BAD_REQUEST , "student Profile photo is required ")
-  }
-  await gradesServices.assignNewStudentIntoDB(req.body , file);
-  sendResponse(res, {
-    success: true,
-    statusCode: 201,
-    message: "student has been assing successfully",
-  });
-})
+// // --------------- assign Student in Grade -----------------//
+// const assignNewStudent = catchAsync(async (req: Request, res: Response) => {
+//   const file = req.file
+//   if(!file){
+//     throw new ApiError(httpStatus.BAD_REQUEST , "student Profile photo is required ")
+//   }
+//   await gradesServices.assignNewStudentIntoDB(req.body , file);
+//   sendResponse(res, {
+//     success: true,
+//     statusCode: 201,
+//     message: "student has been assing successfully",
+//   });
+// })
 
 export const gradesControllers = {
   createGrades,
@@ -101,8 +101,8 @@ export const gradesControllers = {
   getGradesById,
   updateGrades,
   deleteGrades,
-  assignTeacher,
-  assignExistingTeacher,
-  assignNewStudent,
+  // assignTeacher,
+  // assignExistingTeacher,
+  // assignNewStudent,
 }
   

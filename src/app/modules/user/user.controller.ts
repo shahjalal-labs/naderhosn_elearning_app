@@ -65,8 +65,6 @@ const updateUser = catchAsync(async (req, res) => {
   });
 });
 
-
-
 const adminOverview = catchAsync(async (req, res) => {
   const results = await userService.adminOverview();
   sendResponse(res, {
@@ -77,7 +75,7 @@ const adminOverview = catchAsync(async (req, res) => {
   });
 });
 
-// -------- downlaod ------------ 
+// -------- downlaod ------------
 // controller
 const downloadStudents = catchAsync(async (req, res) => {
   const { school, grade, teacher } = req.query as { [key: string]: any };
@@ -99,7 +97,9 @@ const downloadStudents = catchAsync(async (req, res) => {
 
 //get users
 const downloadTeachers = catchAsync(async (req, res) => {
-  const { school, grade, teacher, details } = req.query as { [key: string]: any };
+  const { school, grade, teacher, details } = req.query as {
+    [key: string]: any;
+  };
   const query = {
     school: school === "true",
     grade: grade === "true",
@@ -115,6 +115,50 @@ const downloadTeachers = catchAsync(async (req, res) => {
   });
 });
 
+// Add new student
+const createStudent = catchAsync(async (req, res) => {
+  const file = req.file as Express.Multer.File;
+  const result = await userService.createStudent(req.body, file);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "stucent created  successfully",
+    data: result,
+  });
+});
+
+const createTeacher = catchAsync(async (req, res) => {
+  const file = req.file as Express.Multer.File;
+  const result = await userService.createTeacher(req.body, file);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Teacher created  successfully",
+    data: result,
+  });
+});
+
+// bulk uploads
+
+const bulkUploadStudentIntoDB = catchAsync(async (req, res) => {
+  const result = await userService.bulkUploadStudentIntoDB(req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "students created successfully",
+    data: result,
+  });
+});
+const bulkUploadTeacherIntoDB = catchAsync(async (req, res) => {
+  const result = await userService.bulkUploadTeacherIntoDB(req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "teachers created  successfully",
+    data: result,
+  });
+});
+
 export const UserControllers = {
   getUsers,
   getSingleUser,
@@ -124,5 +168,9 @@ export const UserControllers = {
   getTeachers,
   getStudents,
   downloadStudents,
-  downloadTeachers
+  downloadTeachers,
+  createStudent,
+  createTeacher,
+  bulkUploadTeacherIntoDB,
+  bulkUploadStudentIntoDB,
 };

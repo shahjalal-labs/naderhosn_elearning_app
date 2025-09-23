@@ -13,7 +13,7 @@ const teacherOverview = async (user: JwtPayload, serchTerm: string) => {
   const [assignedClassesAgg, totalBooksAgg, totalStudentsAgg] =
     await prisma.$transaction([
       // total assigned classes
-      prisma.schoolGrades.count({
+      prisma.Grades.count({
         where: { TeacherGrades: { some: { teacherId: user.id } } },
       }),
       // total books for all teacher grades
@@ -26,7 +26,7 @@ const teacherOverview = async (user: JwtPayload, serchTerm: string) => {
       }),
     ]);
 
-  const grades = await prisma.schoolGrades.findMany({
+  const grades = await prisma.Grades.findMany({
     where: {
       TeacherGrades: { some: { teacherId: user.id } },
       ...(serchTerm && {
@@ -62,7 +62,7 @@ const getGradesByIdForTeacher = async (
   query: { queryField: GradeQueryFilterTypeForTeacher; searchTerm: string }
 ) => {
   // Check grade exists
-  const gradeData = await prisma.schoolGrades.findUnique({
+  const gradeData = await prisma.Grades.findUnique({
     where: { id },
     include: { school: true },
   });

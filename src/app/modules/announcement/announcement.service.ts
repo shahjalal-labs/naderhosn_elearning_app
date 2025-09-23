@@ -5,7 +5,7 @@ import { sendGroupNotifications } from "../notifications/notification.services";
 const prisma = new PrismaClient();
 
 const createAnnouncement = async (gradeId: string, data: Announcments) => {
-  const isGradeExist = await prisma.schoolGrades.findUnique({
+  const isGradeExist = await prisma.Grades.findUnique({
     where :{
       id : gradeId
     }

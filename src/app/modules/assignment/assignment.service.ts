@@ -24,7 +24,7 @@ const createAssignment = async (
   data: AssignmentInput,
   file?: Express.Multer.File
 ) => {
-  const grade = await prisma.schoolGrades.findUnique({
+  const grade = await prisma.Grades.findUnique({
     where: { id: data.gradeId },
   });
   if (!grade) {

@@ -59,6 +59,7 @@ router.post(
   bookControllers.createBook
 );
 router.get("/", auth(UserRole.Admin), bookControllers.getAllBooks);
+router.get("/books-for-forms", auth(UserRole.Admin), bookControllers.getAllBooksForForms);
 router.get("/:id", auth(), bookControllers.getBookById);
 router.patch(
   "/update-book/:bookId",

@@ -1,18 +1,15 @@
-import { PrismaClient, User } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { gradeQueryFilter, GradeQueryFilterType } from "./grade.const";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
-import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
-import bcrypt from "bcryptjs";
-import { JwtPayload } from "jsonwebtoken";
 const prisma = new PrismaClient();
 
 const createGrades = async (data: any) => {
-  return await prisma.schoolGrades.create({ data });
+  return await prisma.grades.create({ data });
 };
 
 const getAllGradess = async () => {
-  return await prisma.schoolGrades.findMany();
+  return await prisma.grades.findMany();
 };
 
 const getGradesById = async (
@@ -20,7 +17,7 @@ const getGradesById = async (
   query: { queryField: GradeQueryFilterType; searchTerm: string }
 ) => {
   // Check grade exists
-  const gradeData = await prisma.schoolGrades.findUnique({
+  const gradeData = await prisma.grades.findUnique({
     where: { id },
     include: { school: true },
   });
@@ -32,7 +29,7 @@ const getGradesById = async (
   const [teacherCount, studentCount, bookCount] = await Promise.all([
     prisma.teacherGrades.count({ where: { gradeId: id } }),
     prisma.studentGrades.count({ where: { gradeId: id } }),
-    prisma.books.count({ where: { gradeId: id } }),
+    prisma.gradeBooks.count({ where: { gradeId: id } }),
   ]);
 
   let extraData: any[] = [];
@@ -90,19 +87,27 @@ const getGradesById = async (
       break;
 
     case gradeQueryFilter.BOOKS:
-      extraData = await prisma.books.findMany({
+      extraData = await prisma.gradeBooks.findMany({
         where: {
           gradeId: id,
-          bookName: { contains: query.searchTerm, mode: "insensitive" },
+          book: {
+            bookName: { contains: query.searchTerm, mode: "insensitive" },
+          },
         },
       });
       break;
 
     case gradeQueryFilter.RESOURCES:
-      extraData = await prisma.resources.findMany({
+      extraData = await prisma.gradeBooks.findMany({
         where: {
           gradeId: id,
-          title: { contains: query.searchTerm, mode: "insensitive" },
+          book: {
+            Resources: {
+              some: {
+                title: { contains: query.searchTerm, mode: "insensitive" },
+              },
+            },
+          },
         },
       });
       break;
@@ -162,189 +167,189 @@ const getGradesById = async (
 };
 
 const updateGrades = async (id: string, data: any) => {
-  return await prisma.schoolGrades.update({ where: { id }, data });
+  return await prisma.grades.update({ where: { id }, data });
 };
 
 const deleteGrades = async (id: string) => {
-  return await prisma.schoolGrades.delete({ where: { id } });
+  return await prisma.grades.delete({ where: { id } });
 };
 
 // ----------------- Assign Teacher into Grades --------------//
-const assignTeacherIntoDB = async (payload: any, file: Express.Multer.File) => {
-  let profileImage: string;
-  try {
-    profileImage = (await uploadToDigitalOceanAWS(file)).Location;
-  } catch (error) {
-    throw new ApiError(
-      httpStatus.NOT_ACCEPTABLE,
-      "Failed to upload profile image"
-    );
-  }
-  const { gradeId, schoolId, password, ...userCreateData } = payload;
+// const assignTeacherIntoDB = async (payload: any, file: Express.Multer.File) => {
+//   let profileImage: string;
+//   try {
+//     profileImage = (await uploadToDigitalOceanAWS(file)).Location;
+//   } catch (error) {
+//     throw new ApiError(
+//       httpStatus.NOT_ACCEPTABLE,
+//       "Failed to upload profile image"
+//     );
+//   }
+//   const { gradeId, schoolId, password, ...userCreateData } = payload;
 
-  const [isSchoolExist, isGradeExist] = await Promise.all([
-    prisma.school.findUnique({ where: { id: schoolId } }),
-    prisma.schoolGrades.findUnique({ where: { id: gradeId } }),
-  ]);
+//   const [isSchoolExist, isGradeExist] = await Promise.all([
+//     prisma.school.findUnique({ where: { id: schoolId } }),
+//     prisma.Grades.findUnique({ where: { id: gradeId } }),
+//   ]);
 
-  if (!isSchoolExist) {
-    throw new ApiError(httpStatus.NOT_FOUND, "School isn't found");
-  }
-  if (!isGradeExist) {
-    throw new ApiError(httpStatus.NOT_FOUND, "School grade isn't found");
-  }
-  const hashedPass = await bcrypt.hash(password, 10);
+//   if (!isSchoolExist) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "School isn't found");
+//   }
+//   if (!isGradeExist) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "School grade isn't found");
+//   }
+//   const hashedPass = await bcrypt.hash(password, 10);
 
-  const isExist = await prisma.teacherGrades.findFirst({
-    where: {
-      teacher: {
-        email: userCreateData.email,
-      },
-      gradeId,
-      schoolId,
-    },
-  });
-  if (isExist) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "The Teacher already exist");
-  }
+//   const isExist = await prisma.teacherGrades.findFirst({
+//     where: {
+//       teacher: {
+//         email: userCreateData.email,
+//       },
+//       gradeId,
+//       schoolId,
+//     },
+//   });
+//   if (isExist) {
+//     throw new ApiError(httpStatus.BAD_REQUEST, "The Teacher already exist");
+//   }
 
-  // Create teacher & teacherGrades in one transaction
-  const result = await prisma.$transaction(async (tx) => {
-    // Create teacher
-    const createTeacher = await tx.user.create({
-      data: {
-        ...userCreateData,
-        profileImage,
-        role: "Teacher",
-        password: hashedPass,
-      },
-    });
+//   // Create teacher & teacherGrades in one transaction
+//   const result = await prisma.$transaction(async (tx) => {
+//     // Create teacher
+//     const createTeacher = await tx.user.create({
+//       data: {
+//         ...userCreateData,
+//         profileImage,
+//         role: "Teacher",
+//         password: hashedPass,
+//       },
+//     });
 
-    await tx.teacherGrades.create({
-      data: {
-        teacherId: createTeacher.id,
-        gradeId,
-        schoolId,
-      },
-    });
+//     await tx.teacherGrades.create({
+//       data: {
+//         teacherId: createTeacher.id,
+//         gradeId,
+//         schoolId,
+//       },
+//     });
 
-    return createTeacher;
-  });
+//     return createTeacher;
+//   });
 
-  return result;
-};
+//   return result;
+// };
 
-const assignExistingTeacherIntoDB = async ({
-  teacherId,
-  gradeId,
-  schoolId,
-}: {
-  teacherId: string;
-  gradeId: string;
-  schoolId: string;
-}) => {
-  const [schoolExists, gradeExists, teacherExists] = await Promise.all([
-    prisma.school.count({ where: { id: schoolId } }),
-    prisma.schoolGrades.count({ where: { id: gradeId } }),
-    prisma.user.count({ where: { id: teacherId, role: "Teacher" } }),
-  ]);
+// const assignExistingTeacherIntoDB = async ({
+//   teacherId,
+//   gradeId,
+//   schoolId,
+// }: {
+//   teacherId: string;
+//   gradeId: string;
+//   schoolId: string;
+// }) => {
+//   const [schoolExists, gradeExists, teacherExists] = await Promise.all([
+//     prisma.school.count({ where: { id: schoolId } }),
+//     prisma.Grades.count({ where: { id: gradeId } }),
+//     prisma.user.count({ where: { id: teacherId, role: "Teacher" } }),
+//   ]);
 
-  if (!schoolExists)
-    throw new ApiError(httpStatus.NOT_FOUND, "School isn't found");
-  if (!gradeExists)
-    throw new ApiError(httpStatus.NOT_FOUND, "School grade isn't found");
-  if (!teacherExists)
-    throw new ApiError(httpStatus.NOT_FOUND, "Teacher isn't found");
+//   if (!schoolExists)
+//     throw new ApiError(httpStatus.NOT_FOUND, "School isn't found");
+//   if (!gradeExists)
+//     throw new ApiError(httpStatus.NOT_FOUND, "School grade isn't found");
+//   if (!teacherExists)
+//     throw new ApiError(httpStatus.NOT_FOUND, "Teacher isn't found");
 
-  // Check if already assigned
-  const alreadyAssigned = await prisma.teacherGrades.count({
-    where: { teacherId, gradeId, schoolId },
-  });
+//   // Check if already assigned
+//   const alreadyAssigned = await prisma.teacherGrades.count({
+//     where: { teacherId, gradeId, schoolId },
+//   });
 
-  if (alreadyAssigned) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "The Teacher already assigned into this grade"
-    );
-  }
+//   if (alreadyAssigned) {
+//     throw new ApiError(
+//       httpStatus.BAD_REQUEST,
+//       "The Teacher already assigned into this grade"
+//     );
+//   }
 
-  // Create relation
-  return prisma.teacherGrades.create({
-    data: { teacherId, gradeId, schoolId },
-  });
-};
+//   // Create relation
+//   return prisma.teacherGrades.create({
+//     data: { teacherId, gradeId, schoolId },
+//   });
+// };
 
-const assignNewStudentIntoDB = async (
-  payload: any,
-  file: Express.Multer.File
-) => {
-  let profileImage: string;
-  try {
-    profileImage = (await uploadToDigitalOceanAWS(file)).Location;
-  } catch (error) {
-    throw new ApiError(
-      httpStatus.NOT_ACCEPTABLE,
-      "Failed to upload profile image"
-    );
-  }
-  const { gradeId, schoolId, password, ...userCreateData } = payload;
+// const assignNewStudentIntoDB = async (
+//   payload: any,
+//   file: Express.Multer.File
+// ) => {
+//   let profileImage: string;
+//   try {
+//     profileImage = (await uploadToDigitalOceanAWS(file)).Location;
+//   } catch (error) {
+//     throw new ApiError(
+//       httpStatus.NOT_ACCEPTABLE,
+//       "Failed to upload profile image"
+//     );
+//   }
+//   const { gradeId, schoolId, password, ...userCreateData } = payload;
 
-  const [isSchoolExist, isGradeExist] = await Promise.all([
-    prisma.school.findUnique({ where: { id: schoolId } }),
-    prisma.schoolGrades.findUnique({ where: { id: gradeId } }),
-  ]);
+//   const [isSchoolExist, isGradeExist] = await Promise.all([
+//     prisma.school.findUnique({ where: { id: schoolId } }),
+//     prisma.Grades.findUnique({ where: { id: gradeId } }),
+//   ]);
 
-  if (!isSchoolExist) {
-    throw new ApiError(httpStatus.NOT_FOUND, "School isn't found");
-  }
-  if (!isGradeExist) {
-    throw new ApiError(httpStatus.NOT_FOUND, "School grade isn't found");
-  }
+//   if (!isSchoolExist) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "School isn't found");
+//   }
+//   if (!isGradeExist) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "School grade isn't found");
+//   }
 
-  const isExist = await prisma.studentGrades.findFirst({
-    where: {
-      student: {
-        email: userCreateData.email,
-      },
-      gradeId,
-      schoolId,
-    },
-    include: {
-      grade: true,
-    },
-  });
-  if (isExist) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      `The student already exist in  Grade ${isExist.grade.grade} section ${isExist.grade.section} `
-    );
-  }
-  const hashedPass = await bcrypt.hash(password, 10);
-  // Create teacher & teacherGrades in one transaction
-  const result = await prisma.$transaction(async (tx) => {
-    // Create teacher
-    const createStudent = await tx.user.create({
-      data: {
-        ...userCreateData,
-        profileImage,
-        role: "Student",
-        password: hashedPass,
-      },
-    });
+//   const isExist = await prisma.studentGrades.findFirst({
+//     where: {
+//       student: {
+//         email: userCreateData.email,
+//       },
+//       gradeId,
+//       schoolId,
+//     },
+//     include: {
+//       grade: true,
+//     },
+//   });
+//   if (isExist) {
+//     throw new ApiError(
+//       httpStatus.BAD_REQUEST,
+//       `The student already exist in  Grade ${isExist.grade.grade} section ${isExist.grade.section} `
+//     );
+//   }
+//   const hashedPass = await bcrypt.hash(password, 10);
+//   // Create teacher & teacherGrades in one transaction
+//   const result = await prisma.$transaction(async (tx) => {
+//     // Create teacher
+//     const createStudent = await tx.user.create({
+//       data: {
+//         ...userCreateData,
+//         profileImage,
+//         role: "Student",
+//         password: hashedPass,
+//       },
+//     });
 
-    await tx.studentGrades.create({
-      data: {
-        studentId: createStudent.id,
-        gradeId,
-        schoolId,
-      },
-    });
+//     await tx.studentGrades.create({
+//       data: {
+//         studentId: createStudent.id,
+//         gradeId,
+//         schoolId,
+//       },
+//     });
 
-    return createStudent;
-  });
+//     return createStudent;
+//   });
 
-  return result;
-};
+//   return result;
+// };
 
 export const gradesServices = {
   createGrades,
@@ -352,7 +357,7 @@ export const gradesServices = {
   getGradesById,
   updateGrades,
   deleteGrades,
-  assignTeacherIntoDB,
-  assignExistingTeacherIntoDB,
-  assignNewStudentIntoDB,
+  // assignTeacherIntoDB,
+  // assignExistingTeacherIntoDB,
+  // assignNewStudentIntoDB,
 };

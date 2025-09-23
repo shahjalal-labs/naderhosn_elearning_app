@@ -4,6 +4,14 @@ import prisma from "../../../shared/prisma";
 
 import { paginationHelper } from "../../../shared/pagination";
 import { uploadInSpace } from "../../../shared/UploadHelper";
+import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
+import bcrypt from "bcryptjs";
+import {
+  CreateNewStudentType,
+  CreateNewTeacherType,
+  createNewTeacher,
+} from "./user.validation";
+import { tryCatch } from "bullmq";
 
 const getStudents = async () => {
   return await prisma.user.findMany({
@@ -163,8 +171,7 @@ const getDownloadStudents = async (query: {
               select: {
                 id: true,
                 grade: true,
-                section: true,
-                TeacherGrades :true,
+                TeacherGrades: true,
               },
             },
           }),
@@ -202,13 +209,9 @@ const getDownloadStudents = async (query: {
           grade: {
             id: gradeData.id,
             grade: gradeData.grade,
-            section: gradeData.section,
           },
         }),
-      ...(query.school &&
-        schoolData && {
-          school: schoolData,
-        }),
+      ...(query.school && schoolData ? { school: schoolData } : {}),
     };
   });
 };
@@ -252,8 +255,187 @@ const getDownloadTeachers = async (query: {
   // flatten teacher and school to top level
   return teachers.map((tg) => ({
     ...(tg.teacher && { ...tg.teacher }),
-    ...(query.school && tg.School && { school: tg.School }),
+    ...(query.school && tg.School ? { school: tg.School } : {}),
   }));
+};
+
+const createStudent = async (
+  payload: CreateNewStudentType,
+  file?: Express.Multer.File
+) => {
+  const { gradeId, schoolId, userName, email, password, ...rest } = payload;
+
+  const isAlreadyTakenUserName = await prisma.user.findFirst({
+    where: {
+      loginUserName: payload.userName,
+    },
+  });
+  if (isAlreadyTakenUserName) {
+    throw new ApiError(409, "User name already taken");
+  }
+
+  // parallel school + grade check
+  const [school, grade] = await Promise.all([
+    prisma.school.findUnique({ where: { id: schoolId } }),
+    prisma.grades.findUnique({ where: { id: gradeId } }),
+  ]);
+
+  if (!school) throw new ApiError(404, "School not found");
+  if (!grade) throw new ApiError(404, "Grade not found");
+
+  const isAlreadyExist = await prisma.studentGrades.findFirst({
+    where: {
+      grade: { schoolId },
+      student: { loginUserName: userName },
+    },
+  });
+  if (isAlreadyExist) {
+    throw new ApiError(409, "Student already exists in this school");
+  }
+
+  const profileImage = file
+    ? (await uploadToDigitalOceanAWS(file)).Location
+    : "https://i.ibb.co.com/nrs3FjM/images.png";
+
+  let hasherdpass;
+  try {
+    hasherdpass = await bcrypt.hash(payload.password, 8);
+  } catch (error: any) {
+    throw new ApiError(500, error?.message);
+  }
+
+  // transaction
+  const [user] = await prisma.$transaction([
+    prisma.user.create({
+      data: {
+        fullName: payload.name, // only include fields that exist in User model
+        email,
+        password: hasherdpass,
+        loginUserName: userName,
+        role: UserRole.Student,
+        profileImage,
+      },
+    }),
+  ]);
+
+  await prisma.studentGrades.create({
+    data: {
+      gradeId,
+      studentId: user.id,
+    },
+  });
+
+  return user;
+};
+
+const createTeacher = async (
+  payload: CreateNewTeacherType,
+  file?: Express.Multer.File
+) => {
+  const { gradeIds, schoolId, name, userName, email, password, ...rest } =
+    payload;
+
+  const isAlreadyTakenUserName = await prisma.user.findFirst({
+    where: {
+      loginUserName: payload.userName,
+    },
+  });
+  if (isAlreadyTakenUserName) {
+    throw new ApiError(409, "User name already taken");
+  }
+  // parallel school + grade check
+  const [school, grades] = await Promise.all([
+    prisma.school.findUnique({ where: { id: schoolId } }),
+    prisma.grades.findMany({ where: { id: { in: gradeIds } } }),
+  ]);
+
+  if (!school) throw new ApiError(404, "School not found");
+  if (!grades || grades.length === 0)
+    throw new ApiError(404, "Grades not found");
+
+  const isAlreadyExist = await prisma.teacherGrades.findFirst({
+    where: {
+      grade: { schoolId },
+      teacher: { loginUserName: userName },
+    },
+  });
+
+  if (isAlreadyExist) {
+    throw new ApiError(409, "Teacher already exists in this school");
+  }
+
+  const profileImage = file
+    ? (await uploadToDigitalOceanAWS(file)).Location
+    : "https://i.ibb.co/nrs3FjM/images.png";
+  let hasherdpass;
+  try {
+    hasherdpass = await bcrypt.hash(payload.password, 8);
+  } catch (error: any) {
+    throw new ApiError(500, error?.message);
+  }
+
+  // create user (teacher)
+  const user = await prisma.user.create({
+    data: {
+      fullName: name,
+      email,
+      password: hasherdpass,
+      loginUserName: userName,
+      role: UserRole.Teacher,
+      profileImage,
+    },
+  });
+
+  // assign teacher to grades
+  const teacherGradesData = gradeIds.map((gradeId) => ({
+    gradeId,
+    teacherId: user.id,
+  }));
+
+  await prisma.teacherGrades.createMany({
+    data: teacherGradesData,
+  });
+
+  return user;
+};
+
+// ------ bulk upload
+
+const bulkUploadStudentIntoDB = async (payload: {
+  schoolId: string;
+  gradeId: string;
+  numberOfStudent: number;
+}) => {
+  const isSchoolExist = await prisma.school.findUnique({
+    where: { id: payload.schoolId },
+  });
+  if (!isSchoolExist) throw new ApiError(404, "School not found");
+  const isGradeExist = await prisma.grades.findUnique({
+    where: { id: payload.gradeId },
+  });
+  if (!isGradeExist) throw new ApiError(404, "Grade not found");
+
+  for (let index = 0; index < payload.numberOfStudent; index++) {
+    const user = await prisma.user.create({
+      data: {
+        fullName: `Student ${index + 1}`,
+        loginUserName: `student${index + 1}`,
+        password: "123456",
+        role: UserRole.Student,
+      },
+    });
+    await prisma.studentGrades.create({
+      data: {
+        studentId: user.id,
+        gradeId: payload.gradeId,
+      },
+    });
+  }
+  return ;
+};
+const bulkUploadTeacherIntoDB = async (payload: any) => {
+  console.log(payload);
+  return "";
 };
 
 export const userService = {
@@ -266,4 +448,8 @@ export const userService = {
   getTeachers,
   getDownloadTeachers,
   getDownloadStudents,
+  createStudent,
+  createTeacher,
+  bulkUploadTeacherIntoDB,
+  bulkUploadStudentIntoDB,
 };
