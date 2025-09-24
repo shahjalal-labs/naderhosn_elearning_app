@@ -7,6 +7,7 @@ import { User } from "@prisma/client";
 import generateOTP from "../../../helpers/generateOtp";
 import { uploadInSpace } from "../../../shared/UploadHelper";
 import { emailQueue } from "../../../queue/email.queue";
+import httpStatus from "http-status";
 
 const loginUserIntoDB = async (payload: {
   userName: string;
@@ -137,6 +138,12 @@ const sendForgotPasswordOtpDB = async (payload: string) => {
       "Your account already deleted, please contact Admin"
     );
   }
+  if (!existringUser.email) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Please add email from setup profile"
+    );
+  }
   // Generate OTP and expiry time
   const otp = generateOTP(); // 4-digit OTP
   const OTP_EXPIRATION_TIME = 5 * 60 * 1000; // 5 minute
@@ -152,11 +159,12 @@ const sendForgotPasswordOtpDB = async (payload: string) => {
     <p>Thanks, <br>The Support Team</p>
   </div>
 `;
-    await emailQueue.add("forgotPasswordOtp", {
+  await emailQueue.add("forgotPasswordOtp", {
     email: existringUser.email,
-    fullName: existringUser?.fullName ,
+    fullName: existringUser?.fullName,
     otp,
-  });  await prisma.otp.upsert({
+  });
+  await prisma.otp.upsert({
     where: {
       email: existringUser.email,
     },
@@ -178,7 +186,7 @@ const verifyForgotPasswordOtpCodeDB = async (payload: any) => {
     throw new ApiError(400, "Email and OTP are required.");
   }
 
-  const user = await prisma.user.findUnique({ where: { email: email } });
+  const user = await prisma.user.findFirst({ where: { email: email } });
   if (!user) {
     throw new ApiError(404, "User not found");
   }
@@ -231,7 +239,7 @@ const resetForgotPasswordDB = async (newPassword: string, userId: string) => {
   if (!existingUser) {
     throw new ApiError(404, "user not found");
   }
-  const email = existingUser.email as string;
+  const loginUserName = existingUser.loginUserName as string;
   const hashedPassword = await bcrypt.hash(
     newPassword,
     Number(config.jwt.gen_salt)
@@ -239,7 +247,7 @@ const resetForgotPasswordDB = async (newPassword: string, userId: string) => {
 
   await prisma.user.update({
     where: {
-      email: email,
+      loginUserName: loginUserName,
     },
     data: {
       password: hashedPassword,

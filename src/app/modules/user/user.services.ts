@@ -1,17 +1,12 @@
-import { Prisma, User, UserRole } from "@prisma/client";
+import { User, UserRole } from "@prisma/client";
 import ApiError from "../../../errors/ApiErrors";
 import prisma from "../../../shared/prisma";
-
 import { paginationHelper } from "../../../shared/pagination";
 import { uploadInSpace } from "../../../shared/UploadHelper";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import bcrypt from "bcryptjs";
-import {
-  CreateNewStudentType,
-  CreateNewTeacherType,
-  createNewTeacher,
-} from "./user.validation";
-import { tryCatch } from "bullmq";
+import { CreateNewStudentType, CreateNewTeacherType } from "./user.validation";
+import { usersQueue } from "../../../queue/users.queue";
 
 const getStudents = async () => {
   return await prisma.user.findMany({
@@ -400,42 +395,48 @@ const createTeacher = async (
 };
 
 // ------ bulk upload
-
+// For students
 const bulkUploadStudentIntoDB = async (payload: {
   schoolId: string;
   gradeId: string;
   numberOfStudent: number;
 }) => {
-  const isSchoolExist = await prisma.school.findUnique({
-    where: { id: payload.schoolId },
-  });
-  if (!isSchoolExist) throw new ApiError(404, "School not found");
-  const isGradeExist = await prisma.grades.findUnique({
-    where: { id: payload.gradeId },
-  });
-  if (!isGradeExist) throw new ApiError(404, "Grade not found");
+  const [school, grade] = await Promise.all([
+    prisma.school.findUnique({ where: { id: payload.schoolId } }),
+    prisma.grades.findUnique({ where: { id: payload.gradeId } }),
+  ]);
 
-  for (let index = 0; index < payload.numberOfStudent; index++) {
-    const user = await prisma.user.create({
-      data: {
-        fullName: `Student ${index + 1}`,
-        loginUserName: `student${index + 1}`,
-        password: "123456",
-        role: UserRole.Student,
-      },
-    });
-    await prisma.studentGrades.create({
-      data: {
-        studentId: user.id,
-        gradeId: payload.gradeId,
-      },
-    });
-  }
-  return ;
+  if (!school) throw new ApiError(404, "School not found");
+  if (!grade) throw new ApiError(404, "Grade not found");
+  await usersQueue.add("uploadStudents", {
+    type: "student",
+    payload,
+  });
+
+  return "Student bulk upload job has been queued successfully";
 };
-const bulkUploadTeacherIntoDB = async (payload: any) => {
-  console.log(payload);
-  return "";
+
+// For teachers
+const bulkUploadTeacherIntoDB = async (payload: {
+  schoolId: string;
+  gradeIds: string[];
+  numberOfTeacher: number;
+}) => {
+  const [school, grades] = await Promise.all([
+    prisma.school.findUnique({ where: { id: payload.schoolId } }),
+    prisma.grades.findMany({ where: { id: { in: payload.gradeIds } } }),
+  ]);
+
+  if (!school) throw new ApiError(404, "School not found");
+  if (grades.length !== payload.gradeIds.length) {
+    throw new ApiError(404, "Some grades not found");
+  }
+  await usersQueue.add("uploadTeachers", {
+    type: "teacher",
+    payload,
+  });
+
+  return "Teacher bulk upload job has been queued successfully";
 };
 
 export const userService = {

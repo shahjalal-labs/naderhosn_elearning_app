@@ -75,11 +75,15 @@ export interface CreateNewStudentType {
 export const StudentBulkUploadValidation = z.object({
   schoolId: z.string(),
   gradeId: z.string(),
-  numberOfStudent: z.number(),
+  numberOfStudent: z
+    .number()
+    .max(20, { message: "you can create maximum 20 at a time!" }),
 });
 
 export const TeacherBulkUploadValidation = z.object({
   schoolId: z.string(),
   gradeIds: z.array(string()),
-  numberOfStudent: z.number(),
+  numberOfStudent: z
+    .number()
+    .max(20, { message: "you can create maximum 20 at a time!" }),
 });

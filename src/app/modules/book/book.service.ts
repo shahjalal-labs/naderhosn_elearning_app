@@ -177,7 +177,8 @@ const getAllBooks = async (query: any) => {
     .exclude()
     .paginate()
     .include({
-      category : true
+      category : true,
+      Resources : true
     })
     .execute();
   const pagination = await booksQuery.countTotal();
