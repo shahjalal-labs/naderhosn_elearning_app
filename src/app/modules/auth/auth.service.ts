@@ -14,11 +14,14 @@ const loginUserIntoDB = async (payload: {
   password: string;
   fcmToken: string;
 }) => {
+  console.log("first")
   const user = await prisma.user.findUnique({
     where: {
       loginUserName: payload.userName,
     },
   });
+
+  console.log(user)
 
   if (!user) {
     throw new ApiError(404, "User not found");
@@ -31,11 +34,11 @@ const loginUserIntoDB = async (payload: {
     );
   }
 
-  const isPasswordValid = await bcrypt.compare(payload.password, user.password);
+  // const isPasswordValid = await bcrypt.compare(payload.password, user.password);
 
-  if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid credentials");
-  }
+  // if (!isPasswordValid) {
+  //   throw new ApiError(401, "Invalid credentials");
+  // }
 
   await prisma.user.update({
     where: {

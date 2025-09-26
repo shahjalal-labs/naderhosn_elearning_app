@@ -12,13 +12,16 @@ export const userWorker = new Worker(
 
     try {
       if (job.data.type === "student") {
-        const result = await bulkUploadStudent(job.data.payload);
+        await bulkUploadStudent(job.data.users, job.data.gradeId);
         console.log(`✅ Student job ${job.id} completed`);
-        return result;
+        return;
       }
 
       if (job.data.type === "teacher") {
-        const result = await bulkUploadTeacher(job.data.payload);
+        const result = await bulkUploadTeacher(
+          job.data.users,
+          job.data.gradeIds
+        );
         console.log(`✅ Teacher job ${job.id} completed`);
         return result;
       }

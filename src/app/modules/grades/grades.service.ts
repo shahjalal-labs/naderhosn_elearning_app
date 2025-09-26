@@ -16,6 +16,7 @@ const getGradesById = async (
   id: string,
   query: { queryField: GradeQueryFilterType; searchTerm: string }
 ) => {
+  console.log("first");
   // Check grade exists
   const gradeData = await prisma.grades.findUnique({
     where: { id },
@@ -37,12 +38,24 @@ const getGradesById = async (
   // Switch case by queryField
   switch (query.queryField) {
     case gradeQueryFilter.TEACHER:
+      console.log("asasdasdas");
+      const test = await prisma.teacherGrades.findMany({
+        where: {
+          gradeId: id,
+        },
+      });
+      console.log("here is a test data -/", test);
       const teacherData = await prisma.teacherGrades.findMany({
         where: {
           gradeId: id,
-          teacher: {
-            fullName: { contains: query.searchTerm, mode: "insensitive" },
-          },
+          teacher: query.searchTerm
+            ? {
+                fullName: {
+                  contains: query.searchTerm,
+                  mode: "insensitive",
+                },
+              }
+            : {},
         },
         select: {
           teacher: {
@@ -58,6 +71,7 @@ const getGradesById = async (
           },
         },
       });
+      console.log("teacherData", teacherData);
       extraData = teacherData.map((t) => t.teacher);
       break;
 
@@ -65,9 +79,14 @@ const getGradesById = async (
       const studentData = await prisma.studentGrades.findMany({
         where: {
           gradeId: id,
-          student: {
-            fullName: { contains: query.searchTerm, mode: "insensitive" },
-          },
+          student: query.searchTerm
+            ? {
+                fullName: {
+                  contains: query.searchTerm,
+                  mode: "insensitive",
+                },
+              }
+            : {},
         },
         select: {
           student: {
@@ -83,6 +102,7 @@ const getGradesById = async (
           },
         },
       });
+      console.log("studentData");
       extraData = studentData.map((s) => s.student);
       break;
 
@@ -94,11 +114,14 @@ const getGradesById = async (
             bookName: { contains: query.searchTerm, mode: "insensitive" },
           },
         },
+        include: {
+          book: true,
+        },
       });
       break;
 
     case gradeQueryFilter.RESOURCES:
-      extraData = await prisma.gradeBooks.findMany({
+      const data = await prisma.gradeBooks.findMany({
         where: {
           gradeId: id,
           book: {
@@ -109,7 +132,15 @@ const getGradesById = async (
             },
           },
         },
+        include: {
+          book: {
+            include: {
+              Resources: true,
+            },
+          },
+        },
       });
+      extraData = data.map((d) => d.book.Resources);
       break;
 
     case gradeQueryFilter.ASSIGNMENT:
@@ -135,9 +166,14 @@ const getGradesById = async (
       const defaultTeacher = await prisma.teacherGrades.findMany({
         where: {
           gradeId: id,
-          teacher: {
-            fullName: { contains: query.searchTerm, mode: "insensitive" },
-          },
+          teacher: query.searchTerm
+            ? {
+                fullName: {
+                  contains: query.searchTerm,
+                  mode: "insensitive",
+                },
+              }
+            : {},
         },
         select: {
           teacher: {

@@ -5,7 +5,12 @@ import auth from "../../middlewares/auth";
 import { fileUploader } from "../../../helpers/fileUploadHelper";
 import { parseBodyData } from "../../middlewares/parseBodyData";
 import validateRequest from "../../middlewares/validateRequest";
-import { createNewTeacher, createStudent, StudentBulkUploadValidation, TeacherBulkUploadValidation } from "./user.validation";
+import {
+  createNewTeacher,
+  createStudent,
+  StudentBulkUploadValidation,
+  TeacherBulkUploadValidation,
+} from "./user.validation";
 
 const router = express.Router();
 
@@ -41,7 +46,6 @@ router.get(
   auth(UserRole.Admin),
   UserControllers.adminOverview
 );
-export const userRoutes = router;
 
 router.post(
   "/create-single-student",
@@ -73,3 +77,9 @@ router.post(
   validateRequest(TeacherBulkUploadValidation),
   UserControllers.bulkUploadTeacherIntoDB
 );
+
+// edit student and Teachers by admins
+router.patch("/update-teacher/:id", UserControllers.updateTeacherByAdmin);
+router.patch("/update-student/:id", UserControllers.updateStudentByAdmin);
+
+export const userRoutes = router;

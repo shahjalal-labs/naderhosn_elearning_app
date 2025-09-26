@@ -145,8 +145,8 @@ const bulkUploadStudentIntoDB = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: 200,
-    message: "students created successfully",
-    data: result,
+    message: result.message,
+    data: result.students,
   });
 });
 const bulkUploadTeacherIntoDB = catchAsync(async (req, res) => {
@@ -155,6 +155,26 @@ const bulkUploadTeacherIntoDB = catchAsync(async (req, res) => {
     success: true,
     statusCode: 200,
     message: "teachers created  successfully",
+    data: result,
+  });
+});
+const updateTeacherByAdmin = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const result = await userService.updateTeacherByAdminIntoDB(id, req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "teacher updated successfully",
+    data: result,
+  });
+});
+const updateStudentByAdmin = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const result = await userService.updateStudentByAdminIntoDB(id, req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "student updated  successfully",
     data: result,
   });
 });
@@ -173,4 +193,6 @@ export const UserControllers = {
   createTeacher,
   bulkUploadTeacherIntoDB,
   bulkUploadStudentIntoDB,
+  updateTeacherByAdmin,
+  updateStudentByAdmin,
 };

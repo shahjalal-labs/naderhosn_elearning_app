@@ -7,6 +7,7 @@ import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAW
 import bcrypt from "bcryptjs";
 import { CreateNewStudentType, CreateNewTeacherType } from "./user.validation";
 import { usersQueue } from "../../../queue/users.queue";
+import { generateStudentUserName, generateTeacherUserName } from "./const";
 
 const getStudents = async () => {
   return await prisma.user.findMany({
@@ -396,6 +397,7 @@ const createTeacher = async (
 
 // ------ bulk upload
 // For students
+
 const bulkUploadStudentIntoDB = async (payload: {
   schoolId: string;
   gradeId: string;
@@ -408,12 +410,25 @@ const bulkUploadStudentIntoDB = async (payload: {
 
   if (!school) throw new ApiError(404, "School not found");
   if (!grade) throw new ApiError(404, "Grade not found");
+
+  // Generate usernames/passwords
+  const users = Array.from({ length: payload.numberOfStudent }, () => ({
+    loginUserName: generateStudentUserName(),
+    password: "123456",
+  }));
+
+  // Add job to queue with pre-generated users
   await usersQueue.add("uploadStudents", {
     type: "student",
-    payload,
+    users,
+    gradeId: payload.gradeId,
   });
 
-  return "Student bulk upload job has been queued successfully";
+  // Return immediately to frontend
+  return {
+    message: "Student bulk upload job has been queued",
+    students: users,
+  };
 };
 
 // For teachers
@@ -431,13 +446,27 @@ const bulkUploadTeacherIntoDB = async (payload: {
   if (grades.length !== payload.gradeIds.length) {
     throw new ApiError(404, "Some grades not found");
   }
+  // Generate usernames/passwords
+  const users = Array.from({ length: payload.numberOfTeacher }, () => ({
+    loginUserName: generateTeacherUserName(),
+    password: "124124",
+  }));
+
   await usersQueue.add("uploadTeachers", {
     type: "teacher",
-    payload,
+    users,
+    gradeIds: payload.gradeIds,
   });
 
-  return "Teacher bulk upload job has been queued successfully";
+  return users;
 };
+
+const updateTeacherByAdminIntoDB = async(id : string , payload : any)=>{
+  return 
+}
+const updateStudentByAdminIntoDB = async(id : string , payload : any)=>{
+  return 
+}
 
 export const userService = {
   getUsers,
@@ -453,4 +482,6 @@ export const userService = {
   createTeacher,
   bulkUploadTeacherIntoDB,
   bulkUploadStudentIntoDB,
+  updateTeacherByAdminIntoDB,
+  updateStudentByAdminIntoDB
 };

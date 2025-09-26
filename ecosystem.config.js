@@ -16,5 +16,13 @@ module.exports = {
         NODE_ENV: "production",
       },
     },
+    {
+      name: "users-worker",
+      script: "./dist/workers/users.worker.js",
+      watch: false,
+      env: {
+        NODE_ENV: "production",
+      },
+    },
   ],
 };
