@@ -10,6 +10,7 @@ import {
   createStudent,
   StudentBulkUploadValidation,
   TeacherBulkUploadValidation,
+  userGradePayloadSchema,
 } from "./user.validation";
 
 const router = express.Router();
@@ -39,6 +40,7 @@ router.patch(
   auth(UserRole.Admin),
   fileUploader.profileImage,
   parseBodyData,
+  validateRequest(userGradePayloadSchema),
   UserControllers.updateUser
 );
 router.get(

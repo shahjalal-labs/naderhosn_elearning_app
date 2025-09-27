@@ -1,4 +1,4 @@
-import { PrismaClient, SchoolSectionEnum } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { JwtPayload } from "jsonwebtoken";
 import {
   gradeQueryFilterForTeacher,
@@ -13,12 +13,18 @@ const teacherOverview = async (user: JwtPayload, serchTerm: string) => {
   const [assignedClassesAgg, totalBooksAgg, totalStudentsAgg] =
     await prisma.$transaction([
       // total assigned classes
-      prisma.Grades.count({
+      prisma.grades.count({
         where: { TeacherGrades: { some: { teacherId: user.id } } },
       }),
       // total books for all teacher grades
       prisma.books.count({
-        where: { grade: { TeacherGrades: { some: { teacherId: user.id } } } },
+        where: {
+          GradeBooks: {
+            some: {
+              grade: { TeacherGrades: { some: { teacherId: user.id } } },
+            },
+          },
+        },
       }),
       // total students for all teacher grades
       prisma.studentGrades.count({
@@ -26,32 +32,24 @@ const teacherOverview = async (user: JwtPayload, serchTerm: string) => {
       }),
     ]);
 
-  const grades = await prisma.Grades.findMany({
+  const grades = await prisma.grades.findMany({
     where: {
       TeacherGrades: { some: { teacherId: user.id } },
       ...(serchTerm && {
-        OR: [
-          { grade: { equals: serchTerm } },
-          {
-            section: {
-              equals: serchTerm.toUpperCase() as keyof typeof SchoolSectionEnum,
-            },
-          },
-        ],
+        OR: [{ grade: { contains: serchTerm } }],
       }),
     },
-    include: { _count: { select: { Books: true, StudentGrades: true } } },
+    include: { _count: { select: { GradeBooks: true, StudentGrades: true } } },
   });
 
   return {
-    assignedClasses: assignedClassesAgg,
-    totalBooks: totalBooksAgg,
-    totalStudents: totalStudentsAgg,
+    assignedGrades: assignedClassesAgg,
+    assignBooks: totalBooksAgg,
+    activeStudents: totalStudentsAgg,
     grades: grades.map((g) => ({
       id: g.id,
       grade: g.grade,
-      section: g.section,
-      totalBooks: g._count.Books,
+      totalBooks: g._count.GradeBooks,
       totalStudents: g._count.StudentGrades,
     })),
   };
@@ -62,7 +60,7 @@ const getGradesByIdForTeacher = async (
   query: { queryField: GradeQueryFilterTypeForTeacher; searchTerm: string }
 ) => {
   // Check grade exists
-  const gradeData = await prisma.Grades.findUnique({
+  const gradeData = await prisma.grades.findUnique({
     where: { id },
     include: { school: true },
   });
@@ -73,7 +71,15 @@ const getGradesByIdForTeacher = async (
   // count for header
   const [studentCount, bookCount] = await Promise.all([
     prisma.studentGrades.count({ where: { gradeId: id } }),
-    prisma.books.count({ where: { gradeId: id } }),
+    prisma.books.count({
+      where: {
+        GradeBooks: {
+          some: {
+            gradeId: id,
+          },
+        },
+      },
+    }),
   ]);
 
   let extraData: any[] = [];
@@ -84,9 +90,14 @@ const getGradesByIdForTeacher = async (
       const studentData = await prisma.studentGrades.findMany({
         where: {
           gradeId: id,
-          student: {
-            fullName: { contains: query.searchTerm, mode: "insensitive" },
-          },
+          student: query.searchTerm
+            ? {
+                fullName: {
+                  contains: query.searchTerm,
+                  mode: "insensitive",
+                },
+              }
+            : {},
         },
         select: {
           student: {
@@ -108,7 +119,11 @@ const getGradesByIdForTeacher = async (
     case gradeQueryFilterForTeacher.BOOKS:
       extraData = await prisma.books.findMany({
         where: {
-          gradeId: id,
+          GradeBooks: {
+            some: {
+              gradeId: id,
+            },
+          },
           bookName: { contains: query.searchTerm, mode: "insensitive" },
         },
       });
@@ -117,7 +132,13 @@ const getGradesByIdForTeacher = async (
     case gradeQueryFilterForTeacher.RESOURCES:
       extraData = await prisma.resources.findMany({
         where: {
-          gradeId: id,
+          book: {
+            GradeBooks: {
+              some: {
+                gradeId: id,
+              },
+            },
+          },
           title: { contains: query.searchTerm, mode: "insensitive" },
         },
       });

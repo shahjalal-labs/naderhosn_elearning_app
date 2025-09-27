@@ -1,13 +1,18 @@
-import { User, UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import ApiError from "../../../errors/ApiErrors";
 import prisma from "../../../shared/prisma";
 import { paginationHelper } from "../../../shared/pagination";
-import { uploadInSpace } from "../../../shared/UploadHelper";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import bcrypt from "bcryptjs";
-import { CreateNewStudentType, CreateNewTeacherType } from "./user.validation";
 import { usersQueue } from "../../../queue/users.queue";
-import { generateStudentUserName, generateTeacherUserName } from "./const";
+import {
+  CreateNewStudentType,
+  CreateNewTeacherType,
+  generateStudentUserName,
+  generateTeacherUserName,
+  IUserGradePayload,
+} from "./const";
+import httpStatus from "http-status";
 
 const getStudents = async () => {
   return await prisma.user.findMany({
@@ -100,29 +105,149 @@ const getUsers = async (query: any) => {
 };
 
 const updateUser = async (
-  payload: User,
+  payload: IUserGradePayload,
   userId: string,
-  file: Express.Multer.File
+  file?: Express.Multer.File
 ) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
-    throw new ApiError(404, "user not found for edit user");
+    throw new ApiError(404, "User not found for edit");
+  }
+  const { userData: userUpdatePayload, gradeData: userGradePayload } = payload;
+
+  if (
+    userUpdatePayload.loginUserName &&
+    userUpdatePayload.loginUserName !== user.loginUserName
+  ) {
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { loginUserName: userUpdatePayload.loginUserName },
+          { email: userUpdatePayload.email },
+        ],
+      },
+    });
+
+    if (existingUser) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "loginUserName or email  already taken. Please choose another."
+      );
+    }
   }
 
-  let profileImage;
+  // Handle profile image upload (only if file is present)
+  const profileImage = file
+    ? (await uploadToDigitalOceanAWS(file)).Location
+    : user.profileImage;
 
-  if (file) {
-    profileImage = await uploadInSpace(file, "users/profileImage");
-  }
+  // Prepare update object
+  const updateData = {
+    fullName: userUpdatePayload.fullName ?? user.fullName,
+    email: userUpdatePayload.email ?? user.email,
+    DOB: userUpdatePayload.DOB ?? user.DOB,
+    gender: userUpdatePayload.gender ?? user.gender,
+    phone: userUpdatePayload.phone ?? user.phone,
+    password: userUpdatePayload.password
+      ? bcrypt.hashSync(userUpdatePayload.password, 8)
+      : user.password,
+    status: userUpdatePayload.status ?? user.status,
+    loginUserName: userUpdatePayload.loginUserName ?? user.loginUserName,
+    profileImage,
+  };
 
+  // Update user basic info
   await prisma.user.update({
     where: { id: userId },
-    data: {
-      ...payload,
-      profileImage: file ? profileImage : user.profileImage,
-    },
+    data: updateData,
   });
-  return;
+
+  // ===== Handle Grade Logic with switch-case =====
+  if (userGradePayload) {
+    const { deletedGrade = [], newGradeAssign = [] } = userGradePayload;
+
+    switch (user.role) {
+      case "Student": {
+        // Validate deleted grades in one query
+        if (deletedGrade.length) {
+          const existingGrades = await prisma.studentGrades.findMany({
+            where: { gradeId: { in: deletedGrade }, studentId: userId },
+          });
+
+          const existingIds = existingGrades.map((g) => g.gradeId);
+          const missing = deletedGrade.filter((g) => !existingIds.includes(g));
+          if (missing.length > 0) {
+            throw new ApiError(httpStatus.BAD_REQUEST, "Some grades not found");
+          }
+
+          await prisma.studentGrades.deleteMany({
+            where: { studentId: userId, gradeId: { in: deletedGrade } },
+          });
+        }
+
+        // Student can only have one grade
+        if (newGradeAssign.length > 1) {
+          throw new ApiError(
+            httpStatus.BAD_REQUEST,
+            "Student can only assign one Grade."
+          );
+        }
+
+        const alreadyAssigned = await prisma.studentGrades.count({
+          where: { studentId: user.id },
+        });
+
+        if (alreadyAssigned > 0 && newGradeAssign.length) {
+          throw new ApiError(
+            httpStatus.BAD_REQUEST,
+            "Student already has a Grade. Please remove it first."
+          );
+        }
+
+        if (newGradeAssign.length === 1) {
+          await prisma.studentGrades.create({
+            data: { studentId: user.id, gradeId: newGradeAssign[0] },
+          });
+        }
+        break;
+      }
+
+      case "Teacher": {
+        // Validate deleted grades in one query
+        if (deletedGrade.length) {
+          const existingGrades = await prisma.teacherGrades.findMany({
+            where: { gradeId: { in: deletedGrade }, teacherId: userId },
+          });
+
+          const existingIds = existingGrades.map((g) => g.gradeId);
+          const missing = deletedGrade.filter((g) => !existingIds.includes(g));
+          if (missing.length > 0) {
+            throw new ApiError(httpStatus.BAD_REQUEST, "Some grades not found");
+          }
+
+          await prisma.teacherGrades.deleteMany({
+            where: { teacherId: userId, gradeId: { in: deletedGrade } },
+          });
+        }
+
+        // Insert multiple grades at once
+        if (newGradeAssign.length) {
+          await prisma.teacherGrades.createMany({
+            data: newGradeAssign.map((grade) => ({
+              teacherId: user.id,
+              gradeId: grade,
+            })),
+          });
+        }
+        break;
+      }
+
+      default:
+        break;
+    }
+  }
+
+  return { message: "User updated successfully" };
 };
 
 const adminOverview = async () => {
@@ -461,12 +586,12 @@ const bulkUploadTeacherIntoDB = async (payload: {
   return users;
 };
 
-const updateTeacherByAdminIntoDB = async(id : string , payload : any)=>{
-  return 
-}
-const updateStudentByAdminIntoDB = async(id : string , payload : any)=>{
-  return 
-}
+const updateTeacherByAdminIntoDB = async (id: string, payload: any) => {
+  return;
+};
+const updateStudentByAdminIntoDB = async (id: string, payload: any) => {
+  return;
+};
 
 export const userService = {
   getUsers,
@@ -483,5 +608,5 @@ export const userService = {
   bulkUploadTeacherIntoDB,
   bulkUploadStudentIntoDB,
   updateTeacherByAdminIntoDB,
-  updateStudentByAdminIntoDB
+  updateStudentByAdminIntoDB,
 };

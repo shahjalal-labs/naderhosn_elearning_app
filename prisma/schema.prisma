@@ -16,7 +16,7 @@ model User {
   gender        Gender?
   DOB           DateTime?
   phone         String?
-  profileImage  String     @default("https://i.ibb.co.com/nrs3FjM/images.png")
+  profileImage  String?     @default("https://i.ibb.co.com/nrs3FjM/images.png")
   role          UserRole
   status        UserStatus @default(Active)
 

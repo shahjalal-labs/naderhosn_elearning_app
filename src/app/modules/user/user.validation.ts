@@ -10,13 +10,6 @@ export const userValidation = {
   userRegisterValidationSchema,
 };
 
-// enum UserRole {
-//   Admin
-//   Worker
-//   User
-//   Guest
-// }
-
 export const createNewTeacher = z.object({
   name: z.string({
     required_error: "Name is required",
@@ -53,25 +46,6 @@ export const createStudent = z.object({
   }),
 });
 
-// createNewTeacher.type.ts
-
-export interface CreateNewTeacherType {
-  name: string;
-  userName: string;
-  password: string;
-  email?: string; // optional
-  schoolId: string;
-  gradeIds: string[];
-}
-export interface CreateNewStudentType {
-  name: string;
-  userName: string;
-  password: string;
-  email?: string; // optional
-  schoolId: string;
-  gradeId: string;
-}
-
 export const StudentBulkUploadValidation = z.object({
   schoolId: z.string(),
   gradeId: z.string(),
@@ -86,4 +60,32 @@ export const TeacherBulkUploadValidation = z.object({
   numberOfTeacher: z
     .number()
     .max(20, { message: "you can create maximum 20 at a time!" }),
+});
+
+export const UserUpdateValidations = z.object({
+  fullName: z.string().optional(),
+  loginUserName: z.string().optional(),
+  email: z.string().optional(),
+  password: z.string().optional(),
+  gender: z.string(),
+  DOB: z.string(),
+  phone: z.string(),
+  status: z.string(),
+});
+
+export const userGradePayloadSchema = z.object({
+  userData: z.object({
+    loginUserName: z.string().min(3).optional(),
+    fullName: z.string().optional(),
+    email: z.string().email().optional(),
+    password: z.string().min(6).optional(),
+    gender: z.enum(["Male", "Female"]).optional(),
+    DOB: z.union([z.string().datetime(), z.date()]).optional(),
+    phone: z.string().optional(),
+    status: z.enum(["Active", "Deleted", "Blocked"]).optional(),
+  }),
+  gradeData: z.object({
+    deletedGrade: z.array(z.string()).default([]),
+    newGradeAssign: z.array(z.string()).default([]),
+  }),
 });

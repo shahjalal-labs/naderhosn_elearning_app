@@ -61,6 +61,7 @@ const getGradesById = async (
           teacher: {
             select: {
               id: true,
+              loginUserName: true,
               fullName: true,
               profileImage: true,
               email: true,

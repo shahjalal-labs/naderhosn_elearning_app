@@ -1,6 +1,40 @@
 import { UserRole } from "@prisma/client";
 import prisma from "../../../shared/prisma";
 
+
+export interface IUserGradePayload {
+  userData: {
+    loginUserName?: string;
+    fullName?: string;
+    email?: string;
+    password?: string;
+    gender?: "Male" | "Female"  
+    DOB?: Date | string;
+    phone?: string;
+    status?: "Active" | "Deleted" | "Blocked"; 
+  };
+  gradeData: {
+    deletedGrade: string[];
+    newGradeAssign: string[];
+  };
+}
+export interface CreateNewTeacherType {
+  name: string;
+  userName: string;
+  password: string;
+  email?: string; // optional
+  schoolId: string;
+  gradeIds: string[];
+}
+export interface CreateNewStudentType {
+  name: string;
+  userName: string;
+  password: string;
+  email?: string; // optional
+  schoolId: string;
+  gradeId: string;
+}
+
 export function generateStudentUserName(): string {
   const randomFiveDigits = Math.floor(10000 + Math.random() * 90000); // ensures 5 digits
   return `s-${randomFiveDigits}`;
@@ -78,3 +112,4 @@ export const bulkUploadTeacher = async (
     { maxWait: 10000, timeout: 60000 }
   );
 };
+

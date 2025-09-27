@@ -15,38 +15,48 @@ const studentOverview = async (user: JwtPayload) => {
     },
   });
   if (!studentGrade) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Grade not found");
+    throw new ApiError(
+      httpStatus.NOT_FOUND,
+      "You have'nt any garde! contact admin."
+    );
   }
   const totalBooksCount = await prisma.books.count({
     where: {
-      gradeId: studentGrade?.gradeId,
-    },
-  });
-  const totalBooks = await prisma.books.findMany({
-    where: {
-      gradeId: studentGrade?.gradeId,
-    },
-  });
-  const studentAssignment = await prisma.assignmentStudent.findMany({
-    where: {
-      userId: user.id,
-    },
-    select: {
-      assignment: {
-        select: {
-          id: true,
-          title: true,
-          dueDate: true,
-          createdAt: true,
-          updatedAt: true,
+      GradeBooks: {
+        some: {
+          gradeId: studentGrade?.gradeId,
         },
       },
     },
   });
+
+  const totalResources = await prisma.resources.count({
+    where: {
+      book: {
+        GradeBooks: {
+          some: {
+            gradeId: studentGrade.gradeId,
+          },
+        },
+      },
+    },
+  });
+  const studentAssignment = await prisma.assignmentStudent.count({
+    where: {
+      userId: user.id,
+    },
+  });
+  const totalAnnouncment = await prisma.announcments.count({
+    where: {
+      gradeId: studentGrade.gradeId,
+      isPublished: true,
+    },
+  });
   return {
-    bookCount: totalBooksCount,
-    totalBook: totalBooks,
-    assignments: studentAssignment.map((s) => s.assignment),
+    TotalBooks: totalBooksCount,
+    TotalAssignment: studentAssignment,
+    TotalAnnouncment: totalAnnouncment,
+    TotalResources: totalResources,
   };
 };
 
@@ -59,9 +69,13 @@ const getGradesByIdForstudent = async (
     where: {
       studentId: user.id,
     },
-    include :{
-      School :true
-    }
+    include: {
+      grade: {
+        include: {
+          school: true,
+        },
+      },
+    },
   });
   if (!studentGrade) {
     throw new ApiError(
@@ -71,7 +85,13 @@ const getGradesByIdForstudent = async (
   }
   // count for header
   const bookCount = await prisma.books.count({
-    where: { gradeId: studentGrade.gradeId },
+    where: {
+      GradeBooks: {
+        some: {
+          gradeId: studentGrade.gradeId,
+        },
+      },
+    },
   });
 
   let extraData: any[] = [];
@@ -81,17 +101,15 @@ const getGradesByIdForstudent = async (
     case gradeQueryFilterForStudent.BOOKS:
       extraData = await prisma.books.findMany({
         where: {
-          gradeId: studentGrade.gradeId,
+          GradeBooks: {
+            some: {
+              gradeId: studentGrade.gradeId,
+            },
+          },
           bookName: { contains: query.searchTerm, mode: "insensitive" },
         },
-      });
-      break;
-
-    case gradeQueryFilterForStudent.RESOURCES:
-      extraData = await prisma.resources.findMany({
-        where: {
-          gradeId: studentGrade.gradeId,
-          title: { contains: query.searchTerm, mode: "insensitive" },
+        include: {
+          Resources: true,
         },
       });
       break;
@@ -99,18 +117,20 @@ const getGradesByIdForstudent = async (
     case gradeQueryFilterForStudent.ASSIGNMENT:
       const assignmentData = await prisma.assignmentStudent.findMany({
         where: {
-          userId : studentGrade.studentId,
-          // title: { contains: query.searchTerm, mode: "insensitive" },
+          userId: studentGrade.studentId,
+          assignment: {
+            title: { contains: query.searchTerm, mode: "insensitive" },
+          },
         },
-        select :{
-          assignmentStatus : true,
-          assignment : true
-        }
-      })
-      extraData = assignmentData.map(a => ({
-      ...a.assignment,
-      status : a.assignmentStatus
-      }) )
+        select: {
+          assignmentStatus: true,
+          assignment: true,
+        },
+      });
+      extraData = assignmentData.map((a) => ({
+        ...a.assignment,
+        status: a.assignmentStatus,
+      }));
       break;
 
     case gradeQueryFilterForStudent.ANNOUNCMENT:
@@ -129,7 +149,7 @@ const getGradesByIdForstudent = async (
   }
   return {
     assignBook: bookCount,
-    schoolData : studentGrade.School,
+    schoolData: studentGrade.grade.school,
     [query.queryField]: extraData,
   };
 };
