@@ -1,8 +1,4 @@
-import {
-  Assignment,
-  AssignmentStatus,
-  UserRole,
-} from "@prisma/client";
+import { Assignment, AssignmentStatus, UserRole } from "@prisma/client";
 import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
@@ -14,6 +10,8 @@ import {
   sendGroupNotifications,
   sendSingleNotification,
 } from "../notifications/notification.services";
+import { notification } from "../../../queue/notification.queue";
+import { addJobToQueue } from "../../../queue/queue.helpers";
 
 type AssignmentInput = Assignment & {
   studentIds?: string[];
@@ -24,28 +22,27 @@ const createAssignment = async (
   data: AssignmentInput,
   file?: Express.Multer.File
 ) => {
-  const grade = await prisma.Grades.findUnique({
+  const grade = await prisma.grades.findUnique({
     where: { id: data.gradeId },
   });
-  if (!grade) {
-    throw new Error("Grade not found");
-  }
+  if (!grade) throw new Error("Grade not found");
+
   const book = await prisma.books.findUnique({ where: { id: data.bookId } });
-  if (!book) {
-    throw new Error("Book not found");
-  }
+  if (!book) throw new Error("Book not found");
+
   if (Number(data.startPage) >= Number(data.endPage)) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       "End page must be greater than start page"
     );
   }
+
   let attachament: string;
   if (file) {
     attachament = (await uploadToDigitalOceanAWS(file)).Location;
   }
+
   return await prisma.$transaction(async (tx) => {
-    // 1️⃣ Create Assignment
     const assignment = await tx.assignment.create({
       data: {
         title: data.title,
@@ -58,10 +55,9 @@ const createAssignment = async (
         bookId: data.bookId,
       },
     });
-    // 2️⃣ Get list of students
-    let studentIds = [];
+
+    let studentIds: string[] = [];
     if (data.assignToAll) {
-      // Fetch all students in the grade
       const students = await tx.studentGrades.findMany({
         where: { gradeId: data.gradeId },
         select: { studentId: true },
@@ -70,7 +66,7 @@ const createAssignment = async (
     } else {
       studentIds = data.studentIds || [];
     }
-    // 3️⃣ Create AssignmentStudent entries
+
     if (studentIds.length > 0) {
       await tx.assignmentStudent.createMany({
         data: studentIds.map((id: string) => ({
@@ -80,6 +76,7 @@ const createAssignment = async (
       });
     }
 
+    // Immediate notification
     try {
       await sendGroupNotifications(
         studentIds,
@@ -90,9 +87,27 @@ const createAssignment = async (
       console.error("Failed to send assignment notifications:", err);
     }
 
+    // Schedule Reminder (1 day or 2 hours before deadline)
+    const reminderTime = new Date(
+      assignment.dueDate.getTime() - 24 * 60 * 60 * 1000
+    );
+    await addJobToQueue(
+      "assignmentReminder",
+      { assignmentId: assignment.id, studentIds },
+      reminderTime
+    );
+
+    // Schedule Missed Status (at dueDate)
+    await addJobToQueue(
+      "assignmentMissed",
+      { assignmentId: assignment.id, studentIds },
+      new Date(assignment.dueDate)
+    );
+
     return assignment;
   });
 };
+
 const getAllAssignments = async () => {
   return await prisma.assignment.findMany();
 };
@@ -287,6 +302,18 @@ const submitAssignmentIntoDB = async (
       " already submitted the assignment"
     );
   }
+  if (isAssExist.assignmentStatus === AssignmentStatus.Graded) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      " already graded the assignment"
+    );
+  }
+  if (isAssExist.assignmentStatus === AssignmentStatus.Missed) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      " already missed the assignment"
+    );
+  }
   let attachament: string = "";
   if (file) {
     attachament = (await uploadToDigitalOceanAWS(file)).Location;
@@ -320,7 +347,7 @@ const gradedAssignmentIntoDB = async (
 ) => {
   const isAssExist = await prisma.assignmentStudent.findFirst({
     where: {
-      id
+      id,
     },
   });
   if (!isAssExist) {

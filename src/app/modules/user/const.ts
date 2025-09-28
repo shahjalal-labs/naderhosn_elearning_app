@@ -1,6 +1,6 @@
 import { UserRole } from "@prisma/client";
 import prisma from "../../../shared/prisma";
-
+import bcrypt from "bcryptjs";
 
 export interface IUserGradePayload {
   userData: {
@@ -8,10 +8,10 @@ export interface IUserGradePayload {
     fullName?: string;
     email?: string;
     password?: string;
-    gender?: "Male" | "Female"  
+    gender?: "Male" | "Female";
     DOB?: Date | string;
     phone?: string;
-    status?: "Active" | "Deleted" | "Blocked"; 
+    status?: "Active" | "Deleted" | "Blocked";
   };
   gradeData: {
     deletedGrade: string[];
@@ -60,7 +60,7 @@ export const bulkUploadStudent = async (
         const user = await tx.user.create({
           data: {
             loginUserName: userData.loginUserName,
-            password: userData.password,
+            password: await bcrypt.hash(userData.password, 8),
             role: UserRole.Student,
           },
         });
@@ -91,7 +91,7 @@ export const bulkUploadTeacher = async (
         const user = await tx.user.create({
           data: {
             loginUserName: userData.loginUserName,
-            password: userData.password,
+            password:  await bcrypt.hash(userData.password, 8),
             role: UserRole.Teacher,
           },
         });
@@ -112,4 +112,3 @@ export const bulkUploadTeacher = async (
     { maxWait: 10000, timeout: 60000 }
   );
 };
-

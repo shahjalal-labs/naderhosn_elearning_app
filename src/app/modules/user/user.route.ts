@@ -48,6 +48,11 @@ router.get(
   auth(UserRole.Admin),
   UserControllers.adminOverview
 );
+router.get(
+  "/admin-overview-statistics",
+  auth(UserRole.Admin),
+  UserControllers.adminOverviewStatisticsData
+);
 
 router.post(
   "/create-single-student",

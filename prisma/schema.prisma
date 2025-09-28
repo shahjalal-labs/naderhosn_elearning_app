@@ -11,12 +11,12 @@ model User {
   id            String     @id @default(auto()) @map("_id") @db.ObjectId
   loginUserName String     @unique
   fullName      String?
-  email         String?   
+  email         String?
   password      String
   gender        Gender?
   DOB           DateTime?
   phone         String?
-  profileImage  String?     @default("https://i.ibb.co.com/nrs3FjM/images.png")
+  profileImage  String?    @default("https://i.ibb.co.com/nrs3FjM/images.png")
   role          UserRole
   status        UserStatus @default(Active)
 
@@ -48,6 +48,7 @@ enum UserStatus {
   Active
   Blocked
   Deleted
+  Inactive
 }
 
 enum Gender {
@@ -287,8 +288,9 @@ model Announcments {
   anouncement String
   postdate    DateTime
   isPublished Boolean?
-  gradeId     String   @db.ObjectId
-  grade       Grades   @relation(fields: [gradeId], references: [id])
+  publishBy   UserRole
+  gradeId     String?  @db.ObjectId
+  grade       Grades?  @relation(fields: [gradeId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

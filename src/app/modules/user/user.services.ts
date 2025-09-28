@@ -13,39 +13,74 @@ import {
   IUserGradePayload,
 } from "./const";
 import httpStatus from "http-status";
+import {
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+  eachDayOfInterval,
+  eachWeekOfInterval,
+  eachMonthOfInterval,
+  isSameDay,
+  isSameWeek,
+  isSameMonth,
+  format,
+  subYears,
+  eachYearOfInterval,
+  isSameYear,
+  startOfDay,
+  endOfDay,
+  subDays,
+  subWeeks,
+  subMonths,
+} from "date-fns";
+import getModelKeys from "../../../helpers/getModelKeys";
+import QueryBuilderForService from "../../builder/QueryBuilderForService";
 
-const getStudents = async () => {
-  return await prisma.user.findMany({
-    where: {
+const getStudents = async (query: any) => {
+  const keys = await getModelKeys("user");
+  const usersQuery = new QueryBuilderForService(prisma.user, query, keys);
+  const result = await usersQuery
+    .setCustomWhere({
       role: "Student",
-    },
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      DOB: true,
-      gender: true,
-      phone: true,
-      profileImage: true,
-    },
-  });
+    })
+    .search([])
+    .filter()
+    .sort()
+    .fields()
+    .exclude()
+    .paginate()
+    .include()
+    .execute();
+  const pagination = await usersQuery.countTotal();
+  return {
+    meta: pagination,
+    result,
+  };
 };
 
-const getTeachers = async () => {
-  return await prisma.user.findMany({
-    where: {
+const getTeachers = async (query : any) => {
+  const keys = await getModelKeys("user");
+  const usersQuery = new QueryBuilderForService(prisma.user, query, keys);
+  const result = await usersQuery
+    .setCustomWhere({
       role: "Teacher",
-    },
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      DOB: true,
-      gender: true,
-      phone: true,
-      profileImage: true,
-    },
-  });
+    })
+    .search([])
+    .filter()
+    .sort()
+    .fields()
+    .exclude()
+    .paginate()
+    .include()
+    .execute();
+  const pagination = await usersQuery.countTotal();
+  return {
+    meta: pagination,
+    result,
+  };
 };
 
 const getSingleUserIntoDB = async (id: string) => {
@@ -250,27 +285,121 @@ const updateUser = async (
   return { message: "User updated successfully" };
 };
 
-const adminOverview = async () => {
-  const totalRegisterSchool = await prisma.school.count();
-  const totalTeacher = await prisma.user.count({
-    where: {
-      role: "Teacher",
-    },
-  });
-  const totalStudent = await prisma.user.count({
-    where: {
-      role: "Student",
-    },
-  });
-  const totalBooks = await prisma.books.count();
-  return {
-    totalRegisterSchool,
+const adminOverviewStatisticsData = async () => {
+  const [
+    totalSchool,
     totalTeacher,
     totalStudent,
     totalBooks,
+    activeTeacher,
+    inActiveTeacher,
+  ] = await Promise.all([
+    prisma.school.count(),
+    prisma.user.count({ where: { role: "Teacher" } }),
+    prisma.user.count({ where: { role: "Student" } }),
+    prisma.books.count(),
+    prisma.user.count({ where: { role: "Teacher", status: "Active" } }),
+    prisma.user.count({ where: { role: "Teacher", status: "Inactive" } }),
+  ]);
+
+  return {
+    totalSchool,
+    totalTeacher,
+    totalStudent,
+    totalBooks,
+    TeacherRingChert: {
+      activeTeacher,
+      inActiveTeacher,
+    },
   };
 };
-/// ---------- downalod --------
+
+const adminOverViewData = async (
+  filter: "daily" | "weekly" | "monthly" | "yearly"
+) => {
+  const now = new Date();
+  let interval;
+
+  if (filter === "daily") {
+    // Last 7 days ending today
+    interval = {
+      start: subDays(startOfDay(now), 6), // 6 days before today
+      end: endOfDay(now),
+    };
+  } else if (filter === "weekly") {
+    // Last 5 weeks ending current week
+    const currentWeekStart = startOfWeek(now, { weekStartsOn: 0 });
+    interval = {
+      start: subWeeks(currentWeekStart, 4), // 4 weeks before current week
+      end: endOfWeek(now, { weekStartsOn: 0 }),
+    };
+  } else if (filter === "monthly") {
+    // Last 12 months ending current month
+    const currentMonthStart = startOfMonth(now);
+    interval = {
+      start: subMonths(currentMonthStart, 11), // 11 months before current month
+      end: endOfMonth(now),
+    };
+  } else if (filter === "yearly") {
+    // Last 5 years ending current year (already correct)
+    interval = {
+      start: subYears(startOfYear(now), 4),
+      end: endOfYear(now),
+    };
+  } else {
+    throw new Error("Invalid filter");
+  }
+
+  // Fetch all students within interval
+  const students = await prisma.user.findMany({
+    where: {
+      role: "Student",
+      joinedAt: {
+        gte: interval.start,
+        lte: interval.end,
+      },
+    },
+    select: {
+      joinedAt: true,
+    },
+  });
+
+  let chartData: { label: string; value: number }[] = [];
+
+  if (filter === "daily") {
+    const days = eachDayOfInterval(interval);
+    chartData = days.map((day) => ({
+      label: format(day, "EEE dd"),
+      value: students.filter((s) => isSameDay(s.joinedAt, day)).length,
+    }));
+  } else if (filter === "weekly") {
+    const weeks = eachWeekOfInterval(interval, { weekStartsOn: 0 });
+    chartData = weeks.map((weekStart, i) => ({
+      label: `Week ${i + 1}`,
+      value: students.filter((s) =>
+        isSameWeek(s.joinedAt, weekStart, { weekStartsOn: 0 })
+      ).length,
+    }));
+  } else if (filter === "monthly") {
+    const months = eachMonthOfInterval(interval);
+    chartData = months.map((month) => ({
+      label: format(month, "MMMM"),
+      value: students.filter((s) => isSameMonth(s.joinedAt, month)).length,
+    }));
+  } else if (filter === "yearly") {
+    const years = eachYearOfInterval(interval);
+    chartData = years.map((year) => ({
+      label: format(year, "yyyy"),
+      value: students.filter((s) => isSameYear(s.joinedAt, year)).length,
+    }));
+  }
+
+  return {
+    filter,
+    chartData,
+  };
+};
+
 const getDownloadStudents = async (query: {
   school: boolean;
   grade: boolean;
@@ -597,7 +726,7 @@ export const userService = {
   getUsers,
   getSingleUserIntoDB,
   updateUser,
-  adminOverview,
+  adminOverviewStatisticsData,
   deleteUser,
   getStudents,
   getTeachers,
@@ -609,4 +738,5 @@ export const userService = {
   bulkUploadStudentIntoDB,
   updateTeacherByAdminIntoDB,
   updateStudentByAdminIntoDB,
+  adminOverViewData,
 };

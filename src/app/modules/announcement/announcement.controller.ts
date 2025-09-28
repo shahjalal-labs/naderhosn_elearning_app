@@ -4,7 +4,7 @@ import sendResponse from '../../../shared/sendResponse';
 import catchAsync from "../../../shared/catchAsync";
  
 const createAnnouncement = catchAsync (async (req: Request, res: Response) => {
-  const result = await announcementServices.createAnnouncement( req.params.gradeId,req.body);
+  const result = await announcementServices.createAnnouncement( req.params.gradeId,req.body , req.user);
   sendResponse(res, {
     success: true,
     statusCode: 201,

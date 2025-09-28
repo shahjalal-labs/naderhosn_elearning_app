@@ -88,7 +88,7 @@ class QueryBuilderForService {
 
   // Sorting
   sort() {
-    const sort = (this.query.sort as string)?.split(',') || ['-createdAt'];
+    const sort = (this.query.sort as string)?.split(',') || ['-joinedAt'];
     const orderBy = sort.map(field => {
       if (field.startsWith('-')) {
         return { [field.slice(1)]: 'desc' };

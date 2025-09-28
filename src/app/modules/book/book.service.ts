@@ -187,6 +187,7 @@ const getAllBooks = async (query: any) => {
     result,
   };
 };
+
 const getAllBooksForForm = async () => {
   return await prisma.books.findMany();
 };

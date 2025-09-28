@@ -1,10 +1,10 @@
-import { Request, Response } from "express";
+import { query, Request, Response } from "express";
 import catchAsync from "../../../shared/catchAsync";
 import sendResponse from "../../../shared/sendResponse";
 import { userService } from "./user.services";
 
 const getStudents = catchAsync(async (req, res) => {
-  const result = await userService.getStudents();
+  const result = await userService.getStudents(req.query);
   sendResponse(res, {
     success: true,
     statusCode: 200,
@@ -13,7 +13,7 @@ const getStudents = catchAsync(async (req, res) => {
   });
 });
 const getTeachers = catchAsync(async (req, res) => {
-  const result = await userService.getTeachers();
+  const result = await userService.getTeachers(req.query);
   sendResponse(res, {
     success: true,
     statusCode: 200,
@@ -66,11 +66,24 @@ const updateUser = catchAsync(async (req, res) => {
 });
 
 const adminOverview = catchAsync(async (req, res) => {
-  const results = await userService.adminOverview();
+  const { type } = req.query;
+  const overviewType = (type as string) || "daily"; // default to "daily" if not provided
+  const results = await userService.adminOverViewData(
+    overviewType as "daily" | "weekly" | "monthly" | "yearly"
+  );
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Admin overview retrived successfully",
+    data: results,
+  });
+});
+const adminOverviewStatisticsData = catchAsync(async (req, res) => {
+  const results = await userService.adminOverviewStatisticsData();
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "admin Overview Statistics Data retrived successfully",
     data: results,
   });
 });
@@ -195,4 +208,5 @@ export const UserControllers = {
   bulkUploadStudentIntoDB,
   updateTeacherByAdmin,
   updateStudentByAdmin,
+  adminOverviewStatisticsData
 };
