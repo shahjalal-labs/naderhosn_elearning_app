@@ -46,7 +46,7 @@ const getStudents = async (query: any) => {
     .setCustomWhere({
       role: "Student",
     })
-    .search([])
+    .search(["fullName"])
     .filter()
     .sort()
     .fields()
@@ -68,7 +68,7 @@ const getTeachers = async (query : any) => {
     .setCustomWhere({
       role: "Teacher",
     })
-    .search([])
+    .search(["fullName"])
     .filter()
     .sort()
     .fields()
