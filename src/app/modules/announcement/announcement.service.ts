@@ -11,6 +11,7 @@ const createAnnouncement = async (
   data: Announcments,
   user: JwtPayload
 ) => {
+  console.log("from teacher")
   const today = new Date();
   const postDate = new Date(data.postdate);
 
@@ -42,6 +43,7 @@ const createAnnouncement = async (
       select: { teacherId: true },
     });
 
+    console.log(gradeStudents , gradeTeachers)
     const userIds = [
       ...gradeStudents.map((s) => s.studentId),
       ...gradeTeachers.map((t) => t.teacherId),
@@ -54,7 +56,6 @@ const createAnnouncement = async (
     );
   } else {
     const delay = postDate.getTime() - Date.now();
-
     await notification.add(
       "publishAnnouncements",
       { announcementId: announcement.id },
@@ -64,7 +65,52 @@ const createAnnouncement = async (
 
   return announcement;
 };
+const createAnnouncementByAdmin = async (
+  data: Announcments,
+  user: JwtPayload
+) => {
+  const today = new Date();
+  const postDate = new Date(data.postdate);
 
+  if (postDate.getTime() < today.setHours(0, 0, 0, 0)) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Post date must be today or a future date"
+    );
+  }
+
+  const isToday = postDate.toDateString() === today.toDateString();
+
+  const announcement = await prisma.announcments.create({
+    data: {
+      ...data,
+      isPublished: isToday ? true : false,
+      publishBy: user.role,
+    },
+  });
+
+  if (isToday) {
+    const users = await prisma.user.findMany({
+      where: { NOT: { role: "Admin" } },
+      select: { id: true },
+    });
+    const userIds = users.map((u) => u.id);
+    await sendGroupNotifications(
+      userIds,
+      `New Announcement: "${announcement.anouncement}"`,
+      "Admin-Announcement"
+    );
+  } else {
+    const delay = postDate.getTime() - Date.now();
+    await notification.add(
+      "publishAnnouncements",
+      { announcementId: announcement.id },
+      { delay }
+    );
+  }
+
+  return announcement;
+};
 const getAllAnnouncements = async () => {
   return await prisma.announcments.findMany();
 };
@@ -114,4 +160,5 @@ export const announcementServices = {
   getAnnouncementById,
   updateAnnouncement,
   deleteAnnouncement,
+  createAnnouncementByAdmin,
 };

@@ -3,8 +3,6 @@ import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAW
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import prisma from "../../../shared/prisma";
-import getModelKeys from "../../../helpers/getModelKeys";
-import QueryBuilder from "../../builder/QueryBuilder";
 
 type CreateGradeInput = {
   gradeLevel: string;
@@ -84,34 +82,107 @@ const createSchool = async (
   });
 };
 
+// const getAllSchools = async (query: any) => {
+//   const keys = await getModelKeys("school");
+//   const usersQuery = new QueryBuilder(prisma.school, query, keys);
+//   const result = await usersQuery
+//     .search(["name", "location"])
+//     .filter()
+//     .sort()
+//     .fields()
+//     .exclude()
+//     .paginate()
+//     .include({
+//       grades : true
+//       // grades: {
+//       //   // include: {
+//       //   //   GradeBooks: {
+//       //   //     include : {
+//       //   //       "book" : true
+//       //   //     }
+//       //   //   },
+//       //   // },
+//       // },
+//     })
+//     .execute();
+//   const pagination = await usersQuery.countTotal();
+//   return {
+//     meta: pagination,
+//     result,
+//   };
+// };
+
 const getAllSchools = async (query: any) => {
-  const keys = await getModelKeys("school");
-  const usersQuery = new QueryBuilder(prisma.school, query, keys);
-  const result = await usersQuery
-    .search(["name", "location"])
-    .filter()
-    .sort()
-    .fields()
-    .exclude()
-    .paginate()
-    .include({
+  const { page = 1, limit = 10, searchTerm } = query;
+
+  const where: Prisma.SchoolWhereInput = {};
+
+  if (searchTerm) {
+    where.OR = [
+      { name: { contains: searchTerm, mode: "insensitive" } },
+      { location: { contains: searchTerm, mode: "insensitive" } },
+    ];
+  }
+
+  const skip = (Number(page) - 1) * Number(limit);
+  const take = Number(limit);
+
+  // Fetch schools with grades count
+  const schools = await prisma.school.findMany({
+    where,
+    skip,
+    take,
+    orderBy: { createdAt: "desc" },
+    include: {
       grades: {
         include: {
-          GradeBooks: {
-            include : {
-              "book" : true
-            }
+          _count: {
+            select: {
+              StudentGrades: true,
+              TeacherGrades: true,
+            },
           },
         },
       },
-    })
-    .execute();
-  const pagination = await usersQuery.countTotal();
+    },
+  });
+
+  // Calculate total students and teachers per school
+  const result = schools.map((school) => {
+    const studentsCount = school.grades.reduce(
+      (acc, grade) => acc + grade._count.StudentGrades,
+      0
+    );
+    const teacherCount = school.grades.reduce(
+      (acc, grade) => acc + grade._count.TeacherGrades,
+      0
+    );
+
+    return {
+      id: school.id,
+      name: school.name,
+      location: school.location,
+      teacherCount,
+      studentsCount,
+      schoolLogo: school.schoolLogo,
+      createdAt: school.createdAt,
+      updatedAt: school.updatedAt,
+    };
+  });
+
+  const total = await prisma.school.count({ where });
+
   return {
-    meta: pagination,
-    result,
+    meta: {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / Number(limit)),
+    },
+    schools : result,
   };
 };
+
 
 const getSchoolById = async (id: string) => {
   const school = await prisma.school.findUnique({
@@ -277,15 +348,15 @@ const getAllSchoolsForForms = async () => {
     select: {
       id: true,
       name: true,
-      grades : {
-        select :{
-          id : true,
-          grade : true
-        }
-      }
+      grades: {
+        select: {
+          id: true,
+          grade: true,
+        },
+      },
     },
   });
-}
+};
 
 export const schoolServices = {
   createSchool,
@@ -294,5 +365,5 @@ export const schoolServices = {
   updateSchool,
   deleteSchool,
   getDownloadSchoolData,
-  getAllSchoolsForForms
+  getAllSchoolsForForms,
 };

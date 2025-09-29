@@ -12,7 +12,16 @@ const createAnnouncement = catchAsync (async (req: Request, res: Response) => {
     data: result,
   });
 })
- 
+const createAnnouncementByAdmin = catchAsync (async (req: Request, res: Response) => {
+  const result = await announcementServices.createAnnouncementByAdmin(req.body , req.user);
+  sendResponse(res, {
+    success: true,
+    statusCode: 201,
+    message: "The announcement has been created successfully ",
+    data: result,
+  });
+})
+
 const getAllAnnouncements = catchAsync(async (_req: Request, res: Response) => {
   const result = await announcementServices.getAllAnnouncements();
   sendResponse(res, {
@@ -22,7 +31,7 @@ const getAllAnnouncements = catchAsync(async (_req: Request, res: Response) => {
     data: result,
   });
 })
- 
+
 const getAnnouncementById = catchAsync(async (req: Request, res: Response) => {
   const result = await announcementServices.getAnnouncementById(req.params.id);
   sendResponse(res, {
@@ -32,7 +41,7 @@ const getAnnouncementById = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 })
- 
+
 const updateAnnouncement = catchAsync(async (req: Request, res: Response) => {
   const result = await announcementServices.updateAnnouncement(req.params.id, req.body);
   sendResponse(res, {
@@ -42,7 +51,7 @@ const updateAnnouncement = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 })
- 
+
 const deleteAnnouncement = catchAsync(async (req: Request, res: Response) => {
   await announcementServices.deleteAnnouncement(req.params.id);
   sendResponse(res, {
@@ -51,12 +60,13 @@ const deleteAnnouncement = catchAsync(async (req: Request, res: Response) => {
     message: "announcement has been deleted successfully",
   });
 })
- 
+
 export const announcementControllers = {
   createAnnouncement,
   getAllAnnouncements,
   getAnnouncementById,
   updateAnnouncement,
   deleteAnnouncement,
+  createAnnouncementByAdmin
 }
   

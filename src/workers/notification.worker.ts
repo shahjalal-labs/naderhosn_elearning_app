@@ -52,8 +52,16 @@ export const notificationWorker = new Worker(
           !announcement.gradeId ||
           announcement.publishBy === UserRole.Admin
         ) {
-          // sobai k patate hobe
-          console.log('notify the admin')
+          const users = await prisma.user.findMany({
+            where: { NOT: { role: "Admin" } },
+            select: { id: true },
+          });
+          const userIds = users.map((u) => u.id);
+          await sendGroupNotifications(
+            userIds,
+            `New Announcement: "${announcement.anouncement}"`,
+            "Admin-Announcement"
+          );
         }
       }
     }
@@ -97,7 +105,6 @@ export const notificationWorker = new Worker(
     connection: redisClient,
   }
 );
-
 
 notificationWorker.on("failed", (job, err) => {
   console.error(`🚨 Job ${job?.id} failed permanently:`, err);

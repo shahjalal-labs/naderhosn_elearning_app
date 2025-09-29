@@ -6,6 +6,11 @@ import { UserRole } from "@prisma/client";
 const router = express.Router();
 
 router.post(
+  "/",
+  auth(UserRole.Admin),
+  announcementControllers.createAnnouncementByAdmin
+);
+router.post(
   "/:gradeId",
   auth(UserRole.Admin, UserRole.Teacher),
   announcementControllers.createAnnouncement

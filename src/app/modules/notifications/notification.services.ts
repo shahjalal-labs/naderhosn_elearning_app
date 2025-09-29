@@ -7,11 +7,11 @@ export const sendSingleNotification = async (
   receiverId: string,
   content: string,
   senderId?: string,
-  title?: string,
+  title?: string
 ) => {
   const user = await prisma.user.findUnique({
     where: { id: receiverId },
-  }); 
+  });
   if (!user?.fcmToken) {
     await prisma.notification.create({
       data: {
@@ -111,7 +111,7 @@ const getNotificationsFromDB = async (req: any) => {
       receiverId: req.user.id,
     },
     orderBy: { createdAt: "desc" },
-  }); 
+  });
 
   return notifications;
 };
@@ -122,6 +122,7 @@ export const sendGroupNotifications = async (
   title: string,
   senderId?: string
 ) => {
+  console.log("hitt the notifications");
   if (!userIds || userIds.length === 0) return;
 
   const users = await prisma.user.findMany({
@@ -142,14 +143,15 @@ export const sendGroupNotifications = async (
     tokens: fcmTokens,
   };
 
-  await prisma.notification.createMany({
-      data: users.map((user) => ({
-        receiverId: user.id,
-        senderId,
-        title: title || "Notification",
-        content: body,
-      })),
-    });
+  const res = await prisma.notification.createMany({
+    data: users.map((user) => ({
+      receiverId: user.id,
+      senderId,
+      title: title || "Notification",
+      content: body,
+    })),
+  });
+  console.log("from the teacher!",res);
 
   const response = await admin.messaging().sendEachForMulticast(message as any);
   // Save notifications for successful users
@@ -158,9 +160,8 @@ export const sendGroupNotifications = async (
     .filter((idx) => idx !== null) as number[];
 
   const successfulUsers = successIndices.map((idx) => users[idx]);
-  console.log('first' , {successIndices} , {successfulUsers})
+  console.log("first", { successIndices }, { successfulUsers });
   if (successfulUsers.length > 0) {
-    
   }
 
   const failedTokens = response.responses
@@ -173,7 +174,6 @@ export const sendGroupNotifications = async (
     failedTokens,
   };
 };
-
 
 const getSingleNotificationFromDB = async (
   req: any,
