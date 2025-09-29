@@ -1,11 +1,11 @@
 {
-  "name": "E-Learning-backend",
+  "name": "nader",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
     "start": "node ./dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"ts-node-dev --respawn --transpile-only src/server.ts\" \"ts-node-dev --respawn --transpile-only src/workers/email.worker.ts\" \"ts-node-dev --respawn --transpile-only src/workers/users.worker.ts\" ",
+    "dev": "concurrently \"ts-node-dev --respawn --transpile-only src/server.ts\" \"ts-node-dev --respawn --transpile-only src/workers/email.worker.ts\" \"ts-node-dev --respawn --transpile-only src/workers/users.worker.ts\" \"ts-node-dev --respawn --transpile-only src/workers/notification.worker.ts\"  ",
     "build": "tsc",
     "postinstall": "prisma generate"
   },

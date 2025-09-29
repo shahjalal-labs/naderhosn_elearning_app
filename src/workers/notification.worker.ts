@@ -53,6 +53,7 @@ export const notificationWorker = new Worker(
           announcement.publishBy === UserRole.Admin
         ) {
           // sobai k patate hobe
+          console.log('notify the admin')
         }
       }
     }
@@ -96,3 +97,17 @@ export const notificationWorker = new Worker(
     connection: redisClient,
   }
 );
+
+
+notificationWorker.on("failed", (job, err) => {
+  console.error(`🚨 Job ${job?.id} failed permanently:`, err);
+});
+
+notificationWorker.on("error", (err) => {
+  console.error("🔥 Worker global error:", err);
+});
+
+// ✅ Log when worker starts
+notificationWorker.on("ready", () => {
+  console.log("✅ notification worker is READY and processing jobs");
+});

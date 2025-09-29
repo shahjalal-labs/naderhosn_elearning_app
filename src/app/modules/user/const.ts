@@ -34,6 +34,14 @@ export interface CreateNewStudentType {
   schoolId: string;
   gradeId: string;
 }
+export interface usersQuery {
+  searchTerm?: string;
+  page?: number;
+  limit?: number;
+  startDate?: string; 
+  endDate?: string; 
+}
+
 
 export function generateStudentUserName(): string {
   const randomFiveDigits = Math.floor(10000 + Math.random() * 90000); // ensures 5 digits

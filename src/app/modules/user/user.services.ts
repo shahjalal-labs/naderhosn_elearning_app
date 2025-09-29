@@ -11,6 +11,7 @@ import {
   generateStudentUserName,
   generateTeacherUserName,
   IUserGradePayload,
+  usersQuery,
 } from "./const";
 import httpStatus from "http-status";
 import {
@@ -36,49 +37,103 @@ import {
   subWeeks,
   subMonths,
 } from "date-fns";
-import getModelKeys from "../../../helpers/getModelKeys";
-import QueryBuilderForService from "../../builder/QueryBuilderForService";
 
-const getStudents = async (query: any) => {
-  const keys = await getModelKeys("user");
-  const usersQuery = new QueryBuilderForService(prisma.user, query, keys);
-  const result = await usersQuery
-    .setCustomWhere({
-      role: "Student",
-    })
-    .search(["fullName"])
-    .filter()
-    .sort()
-    .fields()
-    .exclude()
-    .paginate()
-    .include()
-    .execute();
-  const pagination = await usersQuery.countTotal();
+export const getStudents = async (query: usersQuery) => {
+  const { searchTerm, page = 1, limit = 10, startDate, endDate } = query;
+
+  const pageNum = Number(page) || 1;
+  const limitNum = Number(limit) || 10;
+  const skip = (pageNum - 1) * limitNum;
+
+  // Build where conditions
+  const where: any = {
+    role: "Student",
+  };
+
+  if (searchTerm) {
+    where.fullName = {
+      contains: searchTerm,
+      mode: "insensitive",
+    };
+  }
+
+  if (startDate && endDate) {
+    where.joinedAt = {
+      gte: new Date(startDate),
+      lte: new Date(endDate),
+    };
+  }
+
+  // Fetch teachers with pagination
+  const result = await prisma.user.findMany({
+    where,
+    skip,
+    take: limitNum,
+    orderBy: {
+      joinedAt: "desc",
+    },
+  });
+
+  // Count total for pagination meta
+  const total = await prisma.user.count({ where });
+
   return {
-    meta: pagination,
+    meta: {
+      total,
+      pageNum,
+      limitNum,
+      totalPages: Math.ceil(total / limitNum),
+    },
     result,
   };
 };
 
-const getTeachers = async (query : any) => {
-  const keys = await getModelKeys("user");
-  const usersQuery = new QueryBuilderForService(prisma.user, query, keys);
-  const result = await usersQuery
-    .setCustomWhere({
-      role: "Teacher",
-    })
-    .search(["fullName"])
-    .filter()
-    .sort()
-    .fields()
-    .exclude()
-    .paginate()
-    .include()
-    .execute();
-  const pagination = await usersQuery.countTotal();
+export const getTeachers = async (query: usersQuery) => {
+  const { searchTerm, page = 1, limit = 10, startDate, endDate } = query;
+
+  const pageNum = Number(page) || 1;
+  const limitNum = Number(limit) || 10;
+  const skip = (pageNum - 1) * limitNum;
+
+  // Build where conditions
+  const where: any = {
+    role: "Teacher",
+  };
+
+  if (searchTerm) {
+    where.fullName = {
+      contains: searchTerm,
+      mode: "insensitive",
+    };
+  }
+
+  if (startDate && endDate) {
+    where.joinedAt = {
+      gte: new Date(startDate),
+      lte: new Date(endDate),
+    };
+  }
+
+  // Fetch teachers with pagination
+  const result = await prisma.user.findMany({
+    where,
+    skip,
+    take: limitNum,
+    orderBy: {
+      joinedAt: "desc",
+    },
+  });
+
+  // Count total for pagination meta
+  const total = await prisma.user.count({ where });
+
   return {
-    meta: pagination,
+    meta: {
+      total,
+      pageNum,
+      limitNum,
+      totalPages: Math.ceil(total / limitNum),
+    },
     result,
   };
 };

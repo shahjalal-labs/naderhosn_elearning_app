@@ -69,15 +69,46 @@ const getGradesByIdForTeacher = async (
   }
 
   // count for header
-  const [studentCount, bookCount] = await Promise.all([
-    prisma.studentGrades.count({ where: { gradeId: id } }),
+  const [
+    studentCount,
+    bookCount,
+    totalResources,
+    totalAssignment,
+    totalAnnouncment,
+  ] = await Promise.all([
+    // 1. Count students in this grade
+    prisma.studentGrades.count({
+      where: { gradeId: id },
+    }),
+
+    // 2. Count books linked to this grade
     prisma.books.count({
       where: {
         GradeBooks: {
-          some: {
-            gradeId: id,
+          some: { gradeId: id },
+        },
+      },
+    }),
+
+    // 3. Count resources linked to books of this grade
+    prisma.resources.count({
+      where: {
+        book: {
+          GradeBooks: {
+            some: { gradeId: id },
           },
         },
+      },
+    }),
+    prisma.assignment.count({
+      where: {
+        gradeId: id,
+      },
+    }),
+    prisma.announcments.count({
+      where: {
+        gradeId: id,
+        isPublished: true,
       },
     }),
   ]);
@@ -170,6 +201,9 @@ const getGradesByIdForTeacher = async (
   return {
     totalStudent: studentCount,
     assignBook: bookCount,
+    totalResources: totalResources,
+    totalAssignment,
+    totalAnnouncment,
     gradeData,
     [query.queryField]: extraData,
   };

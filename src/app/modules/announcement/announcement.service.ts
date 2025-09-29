@@ -58,7 +58,7 @@ const createAnnouncement = async (
     await notification.add(
       "publishAnnouncements",
       { announcementId: announcement.id },
-      { delay } 
+      { delay }
     );
   }
 
