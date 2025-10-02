@@ -3,7 +3,7 @@ import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import { sendGroupNotifications } from "../notifications/notification.services";
 import { JwtPayload } from "jsonwebtoken";
-import { notification } from "../../../queue/notification.queue";
+import { notificationQueue } from "../../../queue/notification.queue";
 const prisma = new PrismaClient();
 
 const createAnnouncement = async (
@@ -14,6 +14,15 @@ const createAnnouncement = async (
   console.log("from teacher")
   const today = new Date();
   const postDate = new Date(data.postdate);
+
+  const isGradeExist = await prisma.grades.findUnique({
+    where :{
+      id : gradeId
+    }
+  })
+  if(!isGradeExist){
+    throw new ApiError(httpStatus.BAD_REQUEST, "Grade not found")
+  }
 
   if (postDate.getTime() < today.setHours(0, 0, 0, 0)) {
     throw new ApiError(
@@ -56,7 +65,7 @@ const createAnnouncement = async (
     );
   } else {
     const delay = postDate.getTime() - Date.now();
-    await notification.add(
+    await notificationQueue.add(
       "publishAnnouncements",
       { announcementId: announcement.id },
       { delay }
@@ -102,7 +111,7 @@ const createAnnouncementByAdmin = async (
     );
   } else {
     const delay = postDate.getTime() - Date.now();
-    await notification.add(
+    await notificationQueue.add(
       "publishAnnouncements",
       { announcementId: announcement.id },
       { delay }

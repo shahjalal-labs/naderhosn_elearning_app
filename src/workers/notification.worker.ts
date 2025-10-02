@@ -10,9 +10,9 @@ export const notificationWorker = new Worker(
     console.log("🚀 Worker processing:", job.name);
 
     if (job.name === "publishAnnouncements") {
+      console.log("🚀 Worker processing:", job.name);
       const { announcementId } = job.data;
       const now = new Date();
-
       const announcement = await prisma.announcments.findUnique({
         where: { id: announcementId },
       });
