@@ -10,7 +10,6 @@ import {
   sendGroupNotifications,
   sendSingleNotification,
 } from "../notifications/notification.services";
-import { notification } from "../../../queue/notification.queue";
 import { addJobToQueue } from "../../../queue/queue.helpers";
 
 type AssignmentInput = Assignment & {

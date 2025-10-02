@@ -1,6 +1,7 @@
 // queueHelpers.ts
 
-import { notification } from "./notification.queue";
+import { notificationQueue } from "./notification.queue";
+
 
 export const addJobToQueue = async (
   name: string,
@@ -10,7 +11,7 @@ export const addJobToQueue = async (
   const delay = runAt.getTime() - Date.now();
   if (delay <= 0) return; // যদি past time হয়, skip করো
 
-  await notification.add(name, data, {
+  await notificationQueue.add(name, data, {
     delay,
     attempts: 3,
     removeOnComplete: true,
