@@ -13,6 +13,9 @@ const upload = multer({
       "image/webp",
       "image/avif",
       "video/mp4",
+      "audio/mpeg",
+      "audio/mp3",
+      "application/zip",
       "video/x-matroska",
       "application/pdf",
     ];

@@ -1,7 +1,5 @@
 // queueHelpers.ts
-
 import { notificationQueue } from "./notification.queue";
-
 
 export const addJobToQueue = async (
   name: string,
