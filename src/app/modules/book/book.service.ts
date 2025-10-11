@@ -241,6 +241,13 @@ const getBookById = async (id: string) => {
               id: true,
               grade: true,
               schoolId: true,
+              school : {
+                select :{
+                  id : true,
+                  name : true,
+                  schoolLogo : true,
+                }
+              }
             },
           },
         },
@@ -263,6 +270,7 @@ const getBookById = async (id: string) => {
     }
     groupedGrades[g.schoolId].push({
       id: g.id,
+      school : g.school,
       grade: g.grade,
     });
   });
@@ -285,7 +293,7 @@ const getBookById = async (id: string) => {
     updatedAt: res.updatedAt,
     category: res.category,
     Resources: res.Resources,
-    grades, // ✅ your new grouped data
+    grades,
   };
 };
 
