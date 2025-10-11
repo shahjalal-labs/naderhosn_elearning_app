@@ -192,6 +192,35 @@ const getAllBooksForForm = async () => {
   return await prisma.books.findMany();
 };
 
+// const getBookById = async (id: string) => {
+//   const res = await prisma.books.findUnique({
+//     where: { id },
+//     include: {
+//       category: {
+//         select: {
+//           id: true,
+//           name: true,
+//           image: true,
+//           description: true,
+//         },
+//       },
+//       Resources: true,
+//       GradeBooks : {
+//         select :{
+//           grade : true
+//         }
+//       }
+//     },
+//   });
+//   if (!res) {
+//     throw new Error("Book not found");
+//   }
+//   return {
+    
+//   };
+// };
+
+
 const getBookById = async (id: string) => {
   const res = await prisma.books.findUnique({
     where: { id },
@@ -205,13 +234,61 @@ const getBookById = async (id: string) => {
         },
       },
       Resources: true,
+      GradeBooks: {
+        select: {
+          grade: {
+            select: {
+              id: true,
+              grade: true,
+              schoolId: true,
+            },
+          },
+        },
+      },
     },
   });
+
   if (!res) {
     throw new Error("Book not found");
   }
-  return res;
+
+  // ---- Group grades by schoolId ----
+  const groupedGrades: Record<string, any[]> = {};
+
+  res.GradeBooks.forEach((gb) => {
+    const g = gb.grade;
+    if (!g) return;
+    if (!groupedGrades[g.schoolId]) {
+      groupedGrades[g.schoolId] = [];
+    }
+    groupedGrades[g.schoolId].push({
+      id: g.id,
+      grade: g.grade,
+    });
+  });
+
+  // Convert object into array format
+  const grades = Object.entries(groupedGrades).map(([schoolId, gradesinthisSchool]) => ({
+    schoolId,
+    gradesinthisSchool,
+  }));
+
+  return {
+    id: res.id,
+    bookName: res.bookName,
+    description: res.description,
+    ISBN: res.ISBN,
+    author: res.author,
+    coverImg: res.coverImg,
+    file: res.file,
+    createdAt: res.createdAt,
+    updatedAt: res.updatedAt,
+    category: res.category,
+    Resources: res.Resources,
+    grades, // ✅ your new grouped data
+  };
 };
+
 
 const updateBook = async (
   bookId: string,
