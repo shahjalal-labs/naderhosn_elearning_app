@@ -39,13 +39,21 @@ export const CreateBookSchema = z.object({
 });
 
 export const UpdateBookSchema = z.object({
-  BookData: BookDataSchema,
-  NewGradesAssign: z.array(
-    z.object({
-      schoolId: z.string(),
-      grade: z.array(z.string().regex(/^[a-f\d]{24}$/i, "Invalid grade id")),
-    })
-  ).optional(),
+  BookData: z.object({
+    bookName: z.string().optional(),
+    author: z.string().optional(),
+    description: z.string().optional(),
+    ISBN: z.string().optional(),
+    categoryId: z.string().optional(),
+  }).optional(),
+  NewGradesAssign: z
+    .array(
+      z.object({
+        schoolId: z.string(),
+        grade: z.array(z.string().regex(/^[a-f\d]{24}$/i, "Invalid grade id")),
+      })
+    )
+    .optional(),
   deletedGrades: z
     .array(z.string().regex(/^[a-f\d]{24}$/i, "Invalid grade id"))
     .optional(),

@@ -278,9 +278,11 @@ const getBookById = async (id: string) => {
   // Convert object into array format
   const grades = Object.entries(groupedGrades).map(([schoolId, gradesinthisSchool]) => ({
     schoolId,
+    schoolName : gradesinthisSchool[0]?.school?.name || "",
+    schoolLogo : gradesinthisSchool[0]?.school?.schoolLogo || "",
     gradesinthisSchool,
   }));
-
+ 
   return {
     id: res.id,
     bookName: res.bookName,
@@ -293,7 +295,7 @@ const getBookById = async (id: string) => {
     updatedAt: res.updatedAt,
     category: res.category,
     Resources: res.Resources,
-    grades,
+    grades
   };
 };
 

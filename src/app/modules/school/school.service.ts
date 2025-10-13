@@ -187,11 +187,6 @@ const getAllSchools = async (query: any) => {
 const getSchoolById = async (id: string) => {
   const school = await prisma.school.findUnique({
     where: { id },
-    select: {
-      id: true,
-      name: true,
-      schoolLogo: true,
-    },
   });
 
   if (!school) {

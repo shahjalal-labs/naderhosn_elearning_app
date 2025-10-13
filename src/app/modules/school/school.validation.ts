@@ -25,7 +25,7 @@ export const UpdateSchoolSchema = z.object({
     activeStudents: z.number().int().nonnegative().optional(),
     activeTeachers: z.number().int().nonnegative().optional(),
     schoolLogo: z.string().url().optional(),
-  }),
+  }).optional(),
 
   DeleteGrades: z.array(z.string().regex(/^[a-f\d]{24}$/i, "Invalid grade id")).optional(),
 
