@@ -8,7 +8,7 @@ const sendEmail = async (
 ) => {
   // Create a transporter
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    service: "smtp.hostinger.com",
     port: 587,
     secure: false,
     auth: {

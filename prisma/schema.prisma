@@ -86,7 +86,7 @@ model School {
   studentsCount  Int?
   activeStudents Int?
   activeTeachers Int?
-  schoolLogo     String
+  schoolLogo     String?
   grades         Grades[]
 
   // date 
@@ -124,7 +124,7 @@ model StudentGrades {
   studentId String @db.ObjectId
   student   User   @relation(fields: [studentId], references: [id])
   gradeId   String @db.ObjectId
-  grade     Grades @relation(fields: [gradeId], references: [id])
+  grade     Grades @relation(fields: [gradeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -138,7 +138,7 @@ model TeacherGrades {
   teacherId String @db.ObjectId
   teacher   User   @relation(fields: [teacherId], references: [id])
   gradeId   String @db.ObjectId
-  grade     Grades @relation(fields: [gradeId], references: [id])
+  grade     Grades @relation(fields: [gradeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -152,7 +152,7 @@ model GradeBooks {
   bookId  String @db.ObjectId
   book    Books  @relation(fields: [bookId], references: [id])
   gradeId String @db.ObjectId
-  grade   Grades @relation(fields: [gradeId], references: [id])
+  grade   Grades @relation(fields: [gradeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -187,7 +187,7 @@ model Books {
   updatedAt   DateTime     @updatedAt
   // Relations
   categoryId  String       @db.ObjectId
-  category    BookCategory @relation(fields: [categoryId], references: [id])
+  category    BookCategory @relation(fields: [categoryId], references: [id] , onDelete: Cascade)
   Assignment  Assignment[]
   Resources   Resources[]
   GradeBooks  GradeBooks[]
@@ -203,7 +203,7 @@ model Resources {
   Type        ResoucresType
   file        String
   bookId      String        @db.ObjectId
-  book        Books         @relation(fields: [bookId], references: [id])
+  book        Books         @relation(fields: [bookId], references: [id] , onDelete: Cascade)
   uplodedBy   String
   uploderName String
 
@@ -230,7 +230,7 @@ model Assignment {
   attachament String?
   dueDate     DateTime
   gradeId     String              @db.ObjectId
-  grade       Grades              @relation(fields: [gradeId], references: [id])
+  grade       Grades              @relation(fields: [gradeId], references: [id] , onDelete: Cascade)
   bookId      String              @db.ObjectId
   book        Books               @relation(fields: [bookId], references: [id])
   students    AssignmentStudent[]
@@ -243,7 +243,7 @@ model AssignmentStudent {
   id                 String           @id @default(auto()) @map("_id") @db.ObjectId
   user               User             @relation(fields: [userId], references: [id])
   userId             String           @db.ObjectId
-  assignment         Assignment       @relation(fields: [assignmentId], references: [id])
+  assignment         Assignment       @relation(fields: [assignmentId], references: [id] , onDelete: Cascade)
   assignmentId       String           @db.ObjectId
   studentAnswer      String?
   studentAttachement String?
@@ -290,7 +290,7 @@ model Announcments {
   isPublished Boolean?
   publishBy   UserRole
   gradeId     String?  @db.ObjectId
-  grade       Grades?  @relation(fields: [gradeId], references: [id])
+  grade       Grades?  @relation(fields: [gradeId], references: [id] , onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

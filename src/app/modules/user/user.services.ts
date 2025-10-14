@@ -138,17 +138,113 @@ export const getTeachers = async (query: usersQuery) => {
   };
 };
 
+// const getSingleUserIntoDB = async (id: string) => {
+//   // i need check is this user is student or teacher or admin the send releted includes
+//   const user = await prisma.user.findUnique({
+//     where: { id },
+//   });
+//   if (!user) {
+//     throw new ApiError(404, "user not found!");
+//   }
+
+//   const userRole = user.role;
+//   if (userRole === "Student") {
+//     const student = await prisma.user.findUnique({
+//       where: { id, role: "Student" },
+//       include: {
+//         StudentGrades: {
+//           where: {
+//             studentId: id,
+//           },
+//           include: {
+//             grade: {
+//               select: {
+//                 school: true,
+//               },
+//             },
+//           },
+//         },
+//         assignments: true,
+//       },
+//     });
+//     return student;
+//   } else if (userRole === "Teacher") {
+//     const teacher = await prisma.user.findUnique({
+//       where: { id, role: "Teacher" },
+//       include: {
+//         Teacher: {
+//           where: {
+//             teacherId: id,
+//           },
+//           include: {
+//             grade: {
+//               include: {
+//                 school: true,
+//               },
+//             },
+//           },
+//         },
+//       },
+//     });
+//       const { password, ...sanitizedUser } = teacher;
+//     return sanitizedUser;
+//   } else {
+//     const { password, ...sanitizedUser } = user;
+//     return sanitizedUser;
+//   } 
+// };
+
 const getSingleUserIntoDB = async (id: string) => {
+  // Get user first
   const user = await prisma.user.findUnique({
     where: { id },
+    include: {
+      // include all possible relations, conditionally include nested
+      StudentGrades: {
+        include: {
+          grade: {
+            include: {
+              school: true,
+            },
+          },
+        },
+      },
+      assignments: true,
+      Teacher: {
+        include: {
+          grade: {
+            include: {
+              school: true,
+            },
+          },
+        },
+      },
+    },
   });
+
   if (!user) {
-    throw new ApiError(404, "user not found!");
+    throw new ApiError(404, "User not found!");
   }
 
+  // Remove sensitive fields
   const { password, ...sanitizedUser } = user;
+
+  // Optionally, remove irrelevant relations based on role
+  if (sanitizedUser.role === "Student") {
+    Reflect.deleteProperty(sanitizedUser, "Teacher");
+  } else if (sanitizedUser.role === "Teacher") {
+    Reflect.deleteProperty(sanitizedUser, "StudentGrades");
+    Reflect.deleteProperty(sanitizedUser, "assignments");
+  } else {
+    // Admin: remove student/teacher relations
+    Reflect.deleteProperty(sanitizedUser, "StudentGrades");
+    Reflect.deleteProperty(sanitizedUser, "assignments");
+    Reflect.deleteProperty(sanitizedUser, "Teacher");
+  }
+
   return sanitizedUser;
 };
+
 
 const deleteUser = async (id: string) => {
   const user = await prisma.user.findUnique({

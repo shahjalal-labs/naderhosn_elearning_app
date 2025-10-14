@@ -29,7 +29,7 @@ router.get(
   UserControllers.downloadStudents
 );
 
-router.get("/single/:id", UserControllers.getSingleUser);
+router.get("/single-user/:id", auth(UserRole.Admin), UserControllers.getSingleUser);
 router.delete(
   "/delete-user/:id",
   auth(UserRole.Admin),
