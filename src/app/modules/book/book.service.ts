@@ -177,8 +177,8 @@ const getAllBooks = async (query: any) => {
     .exclude()
     .paginate()
     .include({
-      category : true,
-      Resources : true
+      category: true,
+      Resources: true,
     })
     .execute();
   const pagination = await booksQuery.countTotal();
@@ -186,6 +186,62 @@ const getAllBooks = async (query: any) => {
     meta: pagination,
     result,
   };
+};
+
+const getAllBooksForTeacher = async (query: any, user: JwtPayload) => {
+  // Get all grades for this teacher
+
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const teacherGrades = await prisma.teacherGrades.findMany({
+    where: { teacherId: user.id },
+    select: { gradeId: true },
+  });
+
+  const gradeIds = teacherGrades.map((tg) => tg.gradeId);
+
+  if (gradeIds.length === 0) {
+    return [];
+  }
+
+  const searchFilter = query.searchTerm;
+
+  const whereClause: any = {
+    GradeBooks: {
+      some: {
+        gradeId: { in: gradeIds },
+      },
+    },
+    ...(searchFilter && {
+      bookName: { contains: searchFilter, mode: "insensitive" },
+    }),
+  };
+
+  // const books = await prisma.books.findMany({
+  //   where: whereClause,
+  //   include: {
+  //     category: true,
+  //     Resources: true,
+  //   },
+  // });
+
+  const books = await prisma.books.findMany({
+    where: whereClause,
+    include: { category: true, Resources: true },
+    skip,
+    take: limit,
+  });
+
+  return {
+    meta : {
+      page,
+      limit,
+      total: books.length
+    },
+    data: books
+  }
 };
 
 const getAllBooksForForm = async () => {
@@ -216,10 +272,9 @@ const getAllBooksForForm = async () => {
 //     throw new Error("Book not found");
 //   }
 //   return {
-    
+
 //   };
 // };
-
 
 const getBookById = async (id: string) => {
   const res = await prisma.books.findUnique({
@@ -241,13 +296,13 @@ const getBookById = async (id: string) => {
               id: true,
               grade: true,
               schoolId: true,
-              school : {
-                select :{
-                  id : true,
-                  name : true,
-                  schoolLogo : true,
-                }
-              }
+              school: {
+                select: {
+                  id: true,
+                  name: true,
+                  schoolLogo: true,
+                },
+              },
             },
           },
         },
@@ -270,19 +325,21 @@ const getBookById = async (id: string) => {
     }
     groupedGrades[g.schoolId].push({
       id: g.id,
-      school : g.school,
+      school: g.school,
       grade: g.grade,
     });
   });
 
   // Convert object into array format
-  const grades = Object.entries(groupedGrades).map(([schoolId, gradesinthisSchool]) => ({
-    schoolId,
-    schoolName : gradesinthisSchool[0]?.school?.name || "",
-    schoolLogo : gradesinthisSchool[0]?.school?.schoolLogo || "",
-    gradesinthisSchool,
-  }));
- 
+  const grades = Object.entries(groupedGrades).map(
+    ([schoolId, gradesinthisSchool]) => ({
+      schoolId,
+      schoolName: gradesinthisSchool[0]?.school?.name || "",
+      schoolLogo: gradesinthisSchool[0]?.school?.schoolLogo || "",
+      gradesinthisSchool,
+    })
+  );
+
   return {
     id: res.id,
     bookName: res.bookName,
@@ -295,10 +352,9 @@ const getBookById = async (id: string) => {
     updatedAt: res.updatedAt,
     category: res.category,
     Resources: res.Resources,
-    grades
+    grades,
   };
 };
-
 
 const updateBook = async (
   bookId: string,
@@ -397,4 +453,5 @@ export const bookServices = {
   deleteBookCategory,
   uploadResourcesFile,
   getAllBooksForForm,
+  getAllBooksForTeacher,
 };

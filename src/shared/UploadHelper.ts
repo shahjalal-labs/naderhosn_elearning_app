@@ -2,15 +2,25 @@ import { S3Client, S3ClientConfig, ObjectCannedACL } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import path from "path";
 
+// const DO_CONFIG = {
+//   endpoint: "https://dac.fra1.digitaloceanspaces.com",
+//   region: "nyc3",
+//   credentials: {
+//     accessKeyId: "DO00U7LQUH6B8FC6NRXD",
+//     secretAccessKey: "5IjokHGHLokWT1DEO268edvJZGIxPoOwwjFy16pi0wI",
+//   },
+//   spaceName: "dac",
+// };
 const DO_CONFIG = {
-  endpoint: "https://dac.fra1.digitaloceanspaces.com",
+  endpoint: "https://nyc3.digitaloceanspaces.com",
   region: "nyc3",
   credentials: {
-    accessKeyId: "DO00U7LQUH6B8FC6NRXD",
-    secretAccessKey: "5IjokHGHLokWT1DEO268edvJZGIxPoOwwjFy16pi0wI",
+    accessKeyId: "DO002RGDJ947DJHJ9WDT",
+    secretAccessKey: "e5+/pko6Ojar51Hb8ojUKfq2HtXy+tnGKOfs3rIcEfo",
   },
-  spaceName: "dac",
+  spaceName: "smtech-space",
 };
+
 
 const s3Config: S3ClientConfig = {
   endpoint: DO_CONFIG.endpoint,

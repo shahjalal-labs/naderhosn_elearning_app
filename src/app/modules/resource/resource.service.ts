@@ -4,7 +4,6 @@ import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import { JwtPayload } from "jsonwebtoken";
-import { sendGroupNotifications } from "../notifications/notification.services";
 
 const createResource = async (
   data: Resources,
@@ -27,7 +26,7 @@ const createResource = async (
     },
   });
   if (!isBookExist) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Grade not found");
+    throw new ApiError(httpStatus.NOT_FOUND, "Book not found");
   }
   const fileUpload = (await uploadToDigitalOceanAWS(file)).Location;
   await prisma.resources.create({
@@ -35,7 +34,7 @@ const createResource = async (
       ...data,
       bookId,
       file: fileUpload,
-      uploderName: user.fullName,
+      uploderName: user.fullName ?? "",
       uplodedBy: user.role,
     },
   });
