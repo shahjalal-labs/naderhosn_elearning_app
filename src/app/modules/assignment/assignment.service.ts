@@ -79,8 +79,8 @@ const createAssignment = async (
     try {
       await sendGroupNotifications(
         studentIds,
+        "New Assignment",
         `New assignment "${data.title}" has been assigned to you.`,
-        "New Assignment"
       );
     } catch (err) {
       console.error("Failed to send assignment notifications:", err);
@@ -331,8 +331,8 @@ const submitAssignmentIntoDB = async (
   try {
     await sendGroupNotifications(
       isAssExist.assignment.grade.TeacherGrades.map((t) => t.teacherId),
+      "submit assignment",
       `"${user.fullName}" has been submit assignment - ${isAssExist.assignment.title}.`,
-      "submit assignment"
     );
   } catch (err) {
     console.error("Failed to send assignment notifications:", err);

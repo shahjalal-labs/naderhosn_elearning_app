@@ -4,6 +4,7 @@ import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import { JwtPayload } from "jsonwebtoken";
+import { sendGroupNotifications } from "../notifications/notification.services";
 
 const createResource = async (
   data: Resources,
@@ -38,16 +39,17 @@ const createResource = async (
       uplodedBy: user.role,
     },
   });
-  // const userIds = isBookExist.GradeBooks.flatMap(s => s.grade.StudentGrades.map(s => s.id));
-  // try {
-  //   await sendGroupNotifications(
-  //     userIds,
-  //     `New resources Added: "${data.title}"`,
-  //     data.description
-  //   );
-  // } catch (err) {
-  //   console.error("Failed to send announcement notifications:", err);
-  // }
+  console.log("first" , isBookExist.GradeBooks[0].grade.StudentGrades)
+  const userIds = isBookExist.GradeBooks.flatMap(s => s.grade.StudentGrades.map(s => s.studentId));
+  try {
+    await sendGroupNotifications(
+      userIds,
+      `New resources Added: "${data.title}"`,
+      data.description
+    );
+  } catch (err) {
+    console.error("Failed to send announcement notifications:", err);
+  }
   return 
 };
 

@@ -118,11 +118,12 @@ const getNotificationsFromDB = async (req: any) => {
 
 export const sendGroupNotifications = async (
   userIds: string[],
-  body: string,
   title: string,
+  body: string,
   senderId?: string
 ) => {
   console.log("hitt the notifications");
+  console.log(userIds)
   if (!userIds || userIds.length === 0) return;
 
   const users = await prisma.user.findMany({

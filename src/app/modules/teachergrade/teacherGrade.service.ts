@@ -107,8 +107,16 @@ const getGradesByIdForTeacher = async (
     }),
     prisma.announcments.count({
       where: {
-        gradeId: id,
+        OR: [
+          {
+            gradeId: id,
+          },
+          {
+            publishBy: "Admin",
+          },
+        ],
         isPublished: true,
+        title: { contains: query.searchTerm, mode: "insensitive" },
       },
     }),
   ]);
@@ -187,7 +195,14 @@ const getGradesByIdForTeacher = async (
     case gradeQueryFilterForTeacher.ANNOUNCMENT:
       extraData = await prisma.announcments.findMany({
         where: {
-          gradeId: id,
+          OR: [
+            {
+              gradeId: id,
+            },
+            {
+              publishBy: "Admin",
+            },
+          ],
           isPublished: true,
           title: { contains: query.searchTerm, mode: "insensitive" },
         },

@@ -42,8 +42,8 @@ export const notificationWorker = new Worker(
           if (userIds.length > 0) {
             await sendGroupNotifications(
               userIds,
+              "Grade Announcement",
               `New Announcement: "${announcement.title}"`,
-              "Grade Announcement"
             );
           }
         }
@@ -59,8 +59,8 @@ export const notificationWorker = new Worker(
           const userIds = users.map((u) => u.id);
           await sendGroupNotifications(
             userIds,
+            "Admin-Announcement",
             `New Announcement: "${announcement.anouncement}"`,
-            "Admin-Announcement"
           );
         }
       }
@@ -75,8 +75,8 @@ export const notificationWorker = new Worker(
 
       await sendGroupNotifications(
         studentIds,
+        "Assignment Reminder",
         `Assignment: "${assignment.title}" is due tomorrow!`,
-        "Assignment Reminder"
       );
     }
 

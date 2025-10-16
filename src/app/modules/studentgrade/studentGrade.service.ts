@@ -48,7 +48,12 @@ const studentOverview = async (user: JwtPayload) => {
   });
   const totalAnnouncment = await prisma.announcments.count({
     where: {
-      gradeId: studentGrade.gradeId,
+     OR :[
+      { gradeId: studentGrade.gradeId},
+      {
+        publishBy : "Admin"
+      }
+     ],
       isPublished: true,
     },
   });
@@ -136,13 +141,20 @@ const getGradesByIdForstudent = async (
     case gradeQueryFilterForStudent.ANNOUNCMENT:
       extraData = await prisma.announcments.findMany({
         where: {
-          gradeId: studentGrade.gradeId,
+          OR : [
+            {
+              gradeId: studentGrade.gradeId
+            },
+            {
+                publishBy : "Admin"
+            }
+          ],
           isPublished: true,
           title: { contains: query.searchTerm, mode: "insensitive" },
         },
       });
       break;
-
+    
     default:
       extraData = [];
       break;

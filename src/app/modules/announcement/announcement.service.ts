@@ -106,8 +106,8 @@ const createAnnouncementByAdmin = async (
     const userIds = users.map((u) => u.id);
     await sendGroupNotifications(
       userIds,
+      "Admin-Announcement",
       `New Announcement: "${announcement.anouncement}"`,
-      "Admin-Announcement"
     );
   } else {
     const delay = postDate.getTime() - Date.now();
