@@ -10,7 +10,7 @@ export const createAssignmentSchema = z.object({
   dueDate: z.string().datetime({ message: "Invalid date format" }),
   gradeId: z.string().min(1, "Grade ID is required"),
   bookId: z.string().min(1, "Book ID is required"),
-  assignToAll: z.boolean(),
+  assignToAll: z.boolean().or(z.string()),
   studentIds: z.array(z.string()).optional(),
 });
 

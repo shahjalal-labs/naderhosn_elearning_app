@@ -4,7 +4,7 @@ import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import { JwtPayload } from "jsonwebtoken";
-import { z } from "zod";
+import { z, string } from 'zod';
 import { gradedAssignmentSchema } from "./assignment.validation";
 import {
   sendGroupNotifications,
@@ -14,7 +14,7 @@ import { addJobToQueue } from "../../../queue/queue.helpers";
 
 type AssignmentInput = Assignment & {
   studentIds?: string[];
-  assignToAll?: boolean;
+  assignToAll?: boolean | string ;
 };
 
 const createAssignment = async (
@@ -56,7 +56,7 @@ const createAssignment = async (
     });
 
     let studentIds: string[] = [];
-    if (data.assignToAll) {
+    if (Boolean(data.assignToAll)) {
       const students = await tx.studentGrades.findMany({
         where: { gradeId: data.gradeId },
         select: { studentId: true },
