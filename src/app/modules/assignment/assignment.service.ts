@@ -4,7 +4,7 @@ import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import { JwtPayload } from "jsonwebtoken";
-import { z, string } from 'zod';
+import { z, string } from "zod";
 import { gradedAssignmentSchema } from "./assignment.validation";
 import {
   sendGroupNotifications,
@@ -14,7 +14,7 @@ import { addJobToQueue } from "../../../queue/queue.helpers";
 
 type AssignmentInput = Assignment & {
   studentIds?: string[];
-  assignToAll?: boolean | string ;
+  assignToAll?: boolean | string;
 };
 
 const createAssignment = async (
@@ -80,7 +80,7 @@ const createAssignment = async (
       await sendGroupNotifications(
         studentIds,
         "New Assignment",
-        `New assignment "${data.title}" has been assigned to you.`,
+        `New assignment "${data.title}" has been assigned to you.`
       );
     } catch (err) {
       console.error("Failed to send assignment notifications:", err);
@@ -236,6 +236,27 @@ const getAssignmentById = async (id: string, user: JwtPayload) => {
 
   return result;
 };
+const getAssignmentByIdForTeacher = async (assignmentProgressId: string) => {
+  const result = await prisma.assignmentStudent.findFirst({
+    where: {
+      id: assignmentProgressId,
+    },
+    include  :{
+      user :{
+        omit :{
+          password : true,
+          loginUserName : true,
+          fcmToken : true,
+        }
+      },
+      assignment : true
+    }
+  });
+  if (!result) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Not Found ");
+  }
+  return result;
+};
 
 const updateAssignment = async (
   id: string,
@@ -332,7 +353,7 @@ const submitAssignmentIntoDB = async (
     await sendGroupNotifications(
       isAssExist.assignment.grade.TeacherGrades.map((t) => t.teacherId),
       "submit assignment",
-      `"${user.fullName}" has been submit assignment - ${isAssExist.assignment.title}.`,
+      `"${user.fullName}" has been submit assignment - ${isAssExist.assignment.title}.`
     );
   } catch (err) {
     console.error("Failed to send assignment notifications:", err);
@@ -386,4 +407,5 @@ export const assignmentServices = {
   deleteAssignment,
   submitAssignmentIntoDB,
   gradedAssignmentIntoDB,
+  getAssignmentByIdForTeacher,
 };

@@ -36,6 +36,17 @@ const getAssignmentById = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getAssignmentByIdForTeacher = catchAsync(async (req: Request, res: Response) => {
+  const result = await assignmentServices.getAssignmentByIdForTeacher(
+    req.params.assignmentProgressId,
+  );
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "assignment has been retrived successfully",
+    data: result,
+  });
+});
 
 const updateAssignment = catchAsync(async (req: Request, res: Response) => {
   const file = req.file;
@@ -98,4 +109,5 @@ export const assignmentControllers = {
   deleteAssignment,
   submitAssignment,
   gradedAssignment,
+  getAssignmentByIdForTeacher
 };

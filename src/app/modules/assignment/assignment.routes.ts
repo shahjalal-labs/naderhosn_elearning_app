@@ -19,6 +19,7 @@ router.post(
 );
 router.get("/", auth(), assignmentControllers.getAllAssignments);
 router.get("/:id", auth(), assignmentControllers.getAssignmentById);
+router.get("/teacher/:assignmentProgressId", auth(), assignmentControllers.getAssignmentByIdForTeacher);
 router.patch(
   "/update/:id",
   auth(UserRole.Teacher),

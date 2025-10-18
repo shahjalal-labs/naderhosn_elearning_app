@@ -29,7 +29,7 @@ router.get(
   UserControllers.downloadStudents
 );
 
-router.get("/single-user/:id", auth(UserRole.Admin), UserControllers.getSingleUser);
+router.get("/single-user/:id", auth(UserRole.Admin , UserRole.Teacher), UserControllers.getSingleUser);
 router.delete(
   "/delete-user/:id",
   auth(UserRole.Admin),
@@ -37,7 +37,7 @@ router.delete(
 );
 router.patch(
   "/update-user/:userId",
-  auth(UserRole.Admin),
+  auth(UserRole.Admin , UserRole.Teacher),
   fileUploader.profileImage,
   parseBodyData,
   validateRequest(userGradePayloadSchema),

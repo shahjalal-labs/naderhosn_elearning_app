@@ -60,7 +60,7 @@ router.post(
 );
 router.get("/", auth(UserRole.Admin), bookControllers.getAllBooks);
 router.get("/for-teacher", auth(UserRole.Teacher), bookControllers.getAllBooksForTeacher);
-router.get("/books-for-forms", auth(UserRole.Admin), bookControllers.getAllBooksForForms);
+router.get("/books-for-forms", auth(), bookControllers.getAllBooksForForms);
 router.get("/:id", auth(), bookControllers.getBookById);
 router.patch(
   "/update-book/:bookId",
