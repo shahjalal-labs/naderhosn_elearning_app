@@ -7,9 +7,6 @@ import httpStatus from 'http-status';
  
 const createSchool = catchAsync (async (req: Request, res: Response) => {
   const file = req.file
-  if (!file) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "School Photo is missing");
-  }
   const result = await schoolServices.createSchool(req.body , file);
   sendResponse(res, {
     success: true,

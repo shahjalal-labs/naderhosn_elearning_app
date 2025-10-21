@@ -23,7 +23,7 @@ type CreateSchoolInput = Pick<
 
 const createSchool = async (
   data: CreateSchoolInput,
-  file: Express.Multer.File
+  file?: Express.Multer.File
 ) => {
   const {
     name,
@@ -42,7 +42,7 @@ const createSchool = async (
     throw new ApiError(httpStatus.BAD_REQUEST, "School already exists");
   }
 
-  let schoolLogo: string;
+  let schoolLogo: string | undefined = undefined;
 
   const seen = new Set();
   for (const g of grades) {
@@ -57,7 +57,9 @@ const createSchool = async (
   }
 
   try {
-    schoolLogo = (await uploadToDigitalOceanAWS(file)).Location;
+    if(file){
+      schoolLogo = (await uploadToDigitalOceanAWS(file)).Location;
+    }
   } catch (error) {
     throw new ApiError(
       httpStatus.NOT_ACCEPTABLE,
@@ -72,7 +74,7 @@ const createSchool = async (
       activeTeachers,
       studentsCount,
       teacherCount,
-      schoolLogo,
+      schoolLogo: schoolLogo ? schoolLogo : undefined,
       grades: {
         create: grades.map((g: any) => ({
           grade: g.gradeLevel,
