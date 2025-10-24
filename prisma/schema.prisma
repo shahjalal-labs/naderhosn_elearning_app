@@ -81,13 +81,14 @@ model Notification {
 model School {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
   name           String
-  location       String
+  location       String?
   teacherCount   Int?
   studentsCount  Int?
   activeStudents Int?
   activeTeachers Int?
   schoolLogo     String?
   grades         Grades[]
+  schoolDocuments String[]
 
   // date 
   createdAt DateTime @default(now())
@@ -176,12 +177,12 @@ model BookCategory {
 
 model Books {
   id          String       @id @default(auto()) @map("_id") @db.ObjectId
-  bookName    String
-  description String
-  ISBN        String
-  author      String
-  coverImg    String
-  file        String
+  bookName    String?
+  description String?
+  ISBN        String?
+  author      String?
+  coverImg    String?
+  file        String?
   // Date 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -198,14 +199,14 @@ model Books {
 // ----------------------------Resources ------------------
 model Resources {
   id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  description String
-  Type        ResoucresType
-  file        String
+  title       String?
+  description String?
+  Type        ResoucresType?
+  file        String?
   bookId      String        @db.ObjectId
   book        Books         @relation(fields: [bookId], references: [id] , onDelete: Cascade)
-  uplodedBy   String
-  uploderName String
+  uplodedBy   String?
+  uploderName String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -227,7 +228,7 @@ model Assignment {
   startPage   String
   endPage     String
   instruction String
-  attachament String?
+  attachament String
   dueDate     DateTime
   gradeId     String              @db.ObjectId
   grade       Grades              @relation(fields: [gradeId], references: [id] , onDelete: Cascade)

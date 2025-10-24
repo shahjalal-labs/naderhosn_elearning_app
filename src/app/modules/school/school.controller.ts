@@ -80,6 +80,31 @@ const deleteSchool = catchAsync(async (req: Request, res: Response) => {
     message: "school has been deleted successfully",
   });
 })
+const uploadSchoolDocuments = catchAsync(async (req: Request, res: Response) => {
+  const reqFiles = (req as any).files as
+    | Express.Multer.File[]
+    | { [fieldname: string]: Express.Multer.File[] }
+    | undefined;
+
+  if (!reqFiles) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "No Files were uploaded");
+  }
+
+  let filesArray: Express.Multer.File[] = [];
+  if (Array.isArray(reqFiles)) {
+    filesArray = reqFiles;
+  } else {
+    filesArray = Object.values(reqFiles).flat();
+  }
+
+  const result = await schoolServices.uploadSchoolDocuments(filesArray);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "files have been uploaded successfully",
+    data: result,
+  });
+})
  
 export const schoolControllers = {
   createSchool,
@@ -88,6 +113,7 @@ export const schoolControllers = {
   updateSchool,
   deleteSchool,
   getDownloadSchoolData,
-  getAllSchoolsForForms
+  getAllSchoolsForForms,
+  uploadSchoolDocuments
 }
   

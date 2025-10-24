@@ -17,6 +17,7 @@ type CreateSchoolInput = Pick<
   | "activeTeachers"
   | "studentsCount"
   | "teacherCount"
+  | "schoolDocuments"
 > & {
   grades: CreateGradeInput[];
 };
@@ -33,6 +34,7 @@ const createSchool = async (
     studentsCount,
     teacherCount,
     grades,
+    schoolDocuments
   } = data;
 
   const isExist = await prisma.school.findFirst({
@@ -80,10 +82,11 @@ const createSchool = async (
           grade: g.gradeLevel,
         })),
       },
+      schoolDocuments
     },
   });
 };
-
+ 
 // const getAllSchools = async (query: any) => {
 //   const keys = await getModelKeys("school");
 //   const usersQuery = new QueryBuilder(prisma.school, query, keys);
@@ -167,6 +170,7 @@ const getAllSchools = async (query: any) => {
       teacherCount,
       studentsCount,
       schoolLogo: school.schoolLogo,
+      schoolDocuments: school.schoolDocuments,
       createdAt: school.createdAt,
       updatedAt: school.updatedAt,
     };
@@ -236,7 +240,7 @@ const getSchoolById = async (id: string) => {
 
 const updateSchool = async (
   id: string,
-  data: { schoolData: any; DeleteGrades: string[]; grades: any[] },
+  data: { schoolData: any; DeleteGrades: string[]; grades: any[] , schoolDocuments : string[] },
   file?: Express.Multer.File
 ) => {
   // 1. Check if school exists
@@ -261,9 +265,10 @@ const updateSchool = async (
       );
     }
   }
+  console.log(data)
 
   // 3. Update school basic info
-  await prisma.school.update({
+  const res = await prisma.school.update({
     where: { id },
     data: {
       name: data.schoolData.name,
@@ -273,8 +278,11 @@ const updateSchool = async (
       activeStudents: data.schoolData.activeStudents,
       activeTeachers: data.schoolData.activeTeachers,
       schoolLogo: data.schoolData.schoolLogo,
+      schoolDocuments : data.schoolDocuments
     },
   });
+
+  console.log(res)
 
   // 4. Delete grades
   if (data.DeleteGrades && data.DeleteGrades.length > 0) {
@@ -355,6 +363,20 @@ const getAllSchoolsForForms = async () => {
   });
 };
 
+
+const uploadSchoolDocuments = async (files : Express.Multer.File[]) => {
+  const res = await Promise.all(
+    files.map(async (file) => {
+      const uploadResult = await uploadToDigitalOceanAWS(file);
+      return {
+        fileName: file.originalname,
+        url: uploadResult.Location,
+      };
+    })
+  );
+  return res;
+};
+
 export const schoolServices = {
   createSchool,
   getAllSchools,
@@ -363,4 +385,5 @@ export const schoolServices = {
   deleteSchool,
   getDownloadSchoolData,
   getAllSchoolsForForms,
+  uploadSchoolDocuments
 };

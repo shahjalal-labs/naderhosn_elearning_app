@@ -31,4 +31,7 @@ router.patch(
 );
 router.delete("/:id", auth(UserRole.Admin), schoolControllers.deleteSchool);
 
+router.post("/upload-file", auth(UserRole.Admin) , fileUploader.uploadFiles , schoolControllers.uploadSchoolDocuments)
+
+
 export const schoolRoutes = router;

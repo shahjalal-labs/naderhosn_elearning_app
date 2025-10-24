@@ -44,6 +44,10 @@ const uploadBooks = upload.fields([
   { name: "bookPdf", maxCount: 1 },
 ]);
 
+const uploadFiles = upload.fields([
+  { name: "files", maxCount: 10 },
+])
+
 export const fileUploader = {
   upload,
   uploadMultiple,
@@ -52,5 +56,6 @@ export const fileUploader = {
   uploadSingle,
   experienceFile,
   uploadSchoolLogo,
-  uploadBooks
+  uploadBooks,
+  uploadFiles
 };

@@ -45,7 +45,7 @@ const createResource = async (
     await sendGroupNotifications(
       userIds,
       `New resources Added: "${data.title}"`,
-      data.description
+      data.description ?? "",
     );
   } catch (err) {
     console.error("Failed to send announcement notifications:", err);
