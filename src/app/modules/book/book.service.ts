@@ -437,7 +437,6 @@ const deleteBook = async (id: string) => {
   return await prisma.books.delete({ where: { id } });
 };
 const uploadResourcesFile = async (file: Express.Multer.File) => {
-  console.log(file);
   try {
     const uploadeFile = (await uploadToDigitalOceanAWS(file)).Location;
     return { url: uploadeFile };

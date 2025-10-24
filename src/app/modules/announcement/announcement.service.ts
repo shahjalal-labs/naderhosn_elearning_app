@@ -11,7 +11,6 @@ const createAnnouncement = async (
   data: Announcments,
   user: JwtPayload
 ) => {
-  console.log("from teacher")
   const today = new Date();
   const postDate = new Date(data.postdate);
 
@@ -52,7 +51,6 @@ const createAnnouncement = async (
       select: { teacherId: true },
     });
 
-    console.log(gradeStudents , gradeTeachers)
     const userIds = [
       ...gradeStudents.map((s) => s.studentId),
       ...gradeTeachers.map((t) => t.teacherId),

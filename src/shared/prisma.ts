@@ -9,8 +9,6 @@ const prisma = new PrismaClient({
   ],
 });
 
-prisma.$on("error", (e) => {
-  console.log(e);
-});
+prisma.$on("error", (e) => {});
 
 export default prisma;

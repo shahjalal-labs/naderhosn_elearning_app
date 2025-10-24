@@ -265,7 +265,6 @@ const updateSchool = async (
       );
     }
   }
-  console.log(data)
 
   // 3. Update school basic info
   const res = await prisma.school.update({
@@ -282,7 +281,6 @@ const updateSchool = async (
     },
   });
 
-  console.log(res)
 
   // 4. Delete grades
   if (data.DeleteGrades && data.DeleteGrades.length > 0) {

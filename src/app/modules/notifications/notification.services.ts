@@ -122,8 +122,6 @@ export const sendGroupNotifications = async (
   body: string,
   senderId?: string
 ) => {
-  console.log("hitt the notifications");
-  console.log(userIds)
   if (!userIds || userIds.length === 0) return;
 
   const users = await prisma.user.findMany({
@@ -152,7 +150,6 @@ export const sendGroupNotifications = async (
       content: body,
     })),
   });
-  console.log("from the teacher!",res);
 
   const response = await admin.messaging().sendEachForMulticast(message as any);
   // Save notifications for successful users
@@ -161,7 +158,6 @@ export const sendGroupNotifications = async (
     .filter((idx) => idx !== null) as number[];
 
   const successfulUsers = successIndices.map((idx) => users[idx]);
-  console.log("first", { successIndices }, { successfulUsers });
   if (successfulUsers.length > 0) {
   }
 

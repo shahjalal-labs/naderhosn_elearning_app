@@ -12,7 +12,7 @@ const createResource = async (
   file: Express.Multer.File,
   user: JwtPayload
 ) => {
-  const isBookExist = await prisma.books.findUnique({
+  const isBookExist = await prisma.books.findFirst({
     where: { id: bookId },
     include: {
       GradeBooks : {
@@ -39,7 +39,6 @@ const createResource = async (
       uplodedBy: user.role,
     },
   });
-  console.log("first" , isBookExist.GradeBooks[0].grade.StudentGrades)
   const userIds = isBookExist.GradeBooks.flatMap(s => s.grade.StudentGrades.map(s => s.studentId));
   try {
     await sendGroupNotifications(

@@ -7,10 +7,8 @@ import redisClient from "../helpers/radis";
 export const notificationWorker = new Worker(
   "notificationQueue",
   async (job) => {
-    console.log("🚀 Worker processing:", job.name);
 
     if (job.name === "publishAnnouncements") {
-      console.log("🚀 Worker processing:", job.name);
       const { announcementId } = job.data;
       const now = new Date();
       const announcement = await prisma.announcments.findUnique({

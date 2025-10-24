@@ -138,7 +138,6 @@ export const deleteFromDigitalOceanAWS = async (
     // Execute the delete command
     await s3Client.send(command);
 
-    console.log(`Successfully deleted file: ${fileUrl}`);
   } catch (error: any) {
     console.error(`Error deleting file: ${fileUrl}`, error);
     throw new Error(`Failed to delete file: ${error?.message}`);

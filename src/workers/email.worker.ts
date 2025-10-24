@@ -3,7 +3,6 @@ import { forgotPasswordHtml, otpHtml } from "../constant";
 import redisClient from "../helpers/radis";
 import sendEmail from "../helpers/sendEmail";
 
-console.log("first000000")
 new Worker(
   "email",
   async (job) => {

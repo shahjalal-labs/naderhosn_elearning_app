@@ -16,7 +16,6 @@ const getGradesById = async (
   id: string,
   query: { queryField: GradeQueryFilterType; searchTerm: string }
 ) => {
-  console.log("first");
   // Check grade exists
   const gradeData = await prisma.grades.findUnique({
     where: { id },
@@ -38,13 +37,11 @@ const getGradesById = async (
   // Switch case by queryField
   switch (query.queryField) {
     case gradeQueryFilter.TEACHER:
-      console.log("asasdasdas");
       const test = await prisma.teacherGrades.findMany({
         where: {
           gradeId: id,
         },
       });
-      console.log("here is a test data -/", test);
       const teacherData = await prisma.teacherGrades.findMany({
         where: {
           gradeId: id,
@@ -72,7 +69,6 @@ const getGradesById = async (
           },
         },
       });
-      console.log("teacherData", teacherData);
       extraData = teacherData.map((t) => t.teacher);
       break;
 
@@ -103,7 +99,6 @@ const getGradesById = async (
           },
         },
       });
-      console.log("studentData");
       extraData = studentData.map((s) => s.student);
       break;
 
