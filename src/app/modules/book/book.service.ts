@@ -11,7 +11,7 @@ import { JwtPayload } from "jsonwebtoken";
 // ---------------------- Book category Services ------------------ //
 const createBookCategory = async (
   data: BookCategory,
-  file: Express.Multer.File
+  file?: Express.Multer.File
 ) => {
   const isExist = await prisma.bookCategory.findFirst({
     where: { name: data.name },
@@ -19,9 +19,13 @@ const createBookCategory = async (
   if (isExist) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Book category already exist");
   }
-  const { Location } = await uploadToDigitalOceanAWS(file);
+  let image: string | undefined;
+  if (file) {
+    const { Location } = await uploadToDigitalOceanAWS(file);
+    image = Location;
+  }
   return await prisma.bookCategory.create({
-    data: { ...data, image: Location },
+    data: { ...data, image: image },
   });
 };
 
@@ -83,9 +87,9 @@ const deleteBookCategory = async (id: string) => {
 
 const createBook = async (
   bodyData: bookData,
-  coverImage: Express.Multer.File,
   bookPdf: Express.Multer.File,
-  user: JwtPayload
+  user: JwtPayload,
+  coverImage?: Express.Multer.File
 ) => {
   const { BookData, Resources, Grades } = bodyData;
 
@@ -93,7 +97,9 @@ const createBook = async (
   let coverImg;
   let file;
   try {
-    coverImg = (await uploadToDigitalOceanAWS(coverImage)).Location;
+    if (coverImage) {
+      coverImg = (await uploadToDigitalOceanAWS(coverImage)).Location;
+    }
     file = (await uploadToDigitalOceanAWS(bookPdf)).Location;
   } catch (error: any) {
     throw new ApiError(httpStatus.BAD_REQUEST, "File upload failed");
@@ -235,13 +241,13 @@ const getAllBooksForTeacher = async (query: any, user: JwtPayload) => {
   });
 
   return {
-    meta : {
+    meta: {
       page,
       limit,
-      total: books.length
+      total: books.length,
     },
-    data: books
-  }
+    data: books,
+  };
 };
 
 const getAllBooksForForm = async () => {

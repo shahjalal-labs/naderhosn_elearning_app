@@ -8,9 +8,6 @@ import httpStatus from "http-status";
 // ------------ product category controllers -------------
 const createBooksCategory = catchAsync(async (req: Request, res: Response) => {
   const file = req.file;
-  if (!file) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "File is required ");
-  }
   const result = await bookServices.createBookCategory(req.body, file);
   sendResponse(res, {
     success: true,
@@ -75,17 +72,14 @@ const createBook = catchAsync(async (req: Request, res: Response) => {
       (req.files["coverImage"]?.[0] as Express.Multer.File) || undefined;
     file = (req.files["bookPdf"]?.[0] as Express.Multer.File) || undefined;
   }
-  if (!coverImg) {
-    throw new Error("Cover image are required");
-  }
   if (!file) {
     throw new Error("Book file  are required");
   }
   const result = await bookServices.createBook(
     req.body,
-    coverImg,
     file,
-    req.user
+    req.user,
+    coverImg,
   );
   sendResponse(res, {
     success: true,
