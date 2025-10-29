@@ -228,7 +228,7 @@ model Assignment {
   startPage   String
   endPage     String
   instruction String
-  attachament String
+  attachament String?
   dueDate     DateTime
   gradeId     String              @db.ObjectId
   grade       Grades              @relation(fields: [gradeId], references: [id] , onDelete: Cascade)
