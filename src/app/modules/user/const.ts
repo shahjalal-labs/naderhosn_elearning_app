@@ -17,6 +17,7 @@ export interface IUserGradePayload {
     deletedGrade: string[];
     newGradeAssign: string[];
   };
+  bookCategoryIds : string[] | undefined;
 }
 export interface CreateNewTeacherType {
   name: string;

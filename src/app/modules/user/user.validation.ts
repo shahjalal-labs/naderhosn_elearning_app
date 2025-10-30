@@ -94,4 +94,5 @@ export const userGradePayloadSchema = z.object({
     deletedGrade: z.array(z.string()).default([]),
     newGradeAssign: z.array(z.string()).default([]),
   }),
+  bookCategoryIds: z.array(z.string()).optional(),
 });

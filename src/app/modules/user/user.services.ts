@@ -211,14 +211,25 @@ const getSingleUserIntoDB = async (id: string) => {
       },
       assignments: true,
       Teacher: {
-        include: {
-          grade: {
-            include: {
-              school: true,
-            },
+        select :{
+          grade : {
+            include :{
+              school : true
+            }
           },
-        },
+        }
       },
+      teachersBookCategories : {
+        select :{
+          id : true,
+          category : {
+            select :{
+              id : true,
+              name : true
+            }
+          }
+        }
+      }
     },
   });
 
@@ -232,6 +243,7 @@ const getSingleUserIntoDB = async (id: string) => {
   // Optionally, remove irrelevant relations based on role
   if (sanitizedUser.role === "Student") {
     Reflect.deleteProperty(sanitizedUser, "Teacher");
+    // Reflect.deleteProperty(sanitizedUser, "Teacher");
   } else if (sanitizedUser.role === "Teacher") {
     Reflect.deleteProperty(sanitizedUser, "StudentGrades");
     Reflect.deleteProperty(sanitizedUser, "assignments");
@@ -429,6 +441,37 @@ const updateUser = async (
 
       default:
         break;
+    }
+  }
+
+  // handle book category for teacher
+  if (user.role === "Teacher" && payload.bookCategoryIds) {
+    const getAllBookCategory = await prisma.teachersBookCategories.findMany({
+      where: {
+        teacherId: user.id,
+        categoryId: { in: payload.bookCategoryIds },
+      },
+    });
+    const existingCategoryIds = getAllBookCategory.map((bc) => bc.categoryId);
+    const newCategoryIds = payload.bookCategoryIds.filter(
+      (id) => !existingCategoryIds.includes(id)
+    );
+    const isNewCategoriesvalid = await prisma.bookCategory.findMany({
+      where: { id: { in: newCategoryIds } },
+    });
+    if (isNewCategoriesvalid.length !== newCategoryIds.length) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Some book categories not found"
+      );
+    }
+    if (newCategoryIds.length > 0) {
+      await prisma.teachersBookCategories.createMany({
+        data: newCategoryIds.map((categoryId) => ({
+          teacherId: user.id,
+          categoryId,
+        })),
+      });
     }
   }
 
