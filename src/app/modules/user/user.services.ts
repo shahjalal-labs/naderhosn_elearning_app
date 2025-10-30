@@ -211,25 +211,25 @@ const getSingleUserIntoDB = async (id: string) => {
       },
       assignments: true,
       Teacher: {
-        select :{
-          grade : {
-            include :{
-              school : true
-            }
+        select: {
+          grade: {
+            include: {
+              school: true,
+            },
           },
-        }
+        },
       },
-      teachersBookCategories : {
-        select :{
-          id : true,
-          category : {
-            select :{
-              id : true,
-              name : true
-            }
-          }
-        }
-      }
+      teachersBookCategories: {
+        select: {
+          id: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -445,15 +445,25 @@ const updateUser = async (
   }
 
   // handle book category for teacher
-  if (user.role === "Teacher" && payload.bookCategoryIds) {
+
+  if (user.role === "Teacher" && payload.deletedBookCategoryIds) {
+    await prisma.teachersBookCategories.deleteMany({
+      where: {
+        teacherId: user.id,
+        categoryId: { in: payload.deletedBookCategoryIds },
+      },
+    });
+  }
+
+  if (user.role === "Teacher" && payload.newBookCategoryIds) {
     const getAllBookCategory = await prisma.teachersBookCategories.findMany({
       where: {
         teacherId: user.id,
-        categoryId: { in: payload.bookCategoryIds },
+        categoryId: { in: payload.newBookCategoryIds },
       },
     });
     const existingCategoryIds = getAllBookCategory.map((bc) => bc.categoryId);
-    const newCategoryIds = payload.bookCategoryIds.filter(
+    const newCategoryIds = payload.newBookCategoryIds.filter(
       (id) => !existingCategoryIds.includes(id)
     );
     const isNewCategoriesvalid = await prisma.bookCategory.findMany({
