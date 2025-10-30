@@ -25,6 +25,7 @@ export interface CreateNewTeacherType {
   email?: string; // optional
   schoolId: string;
   gradeIds: string[];
+  bookCategoryIds?: string[]; // optional
 }
 export interface CreateNewStudentType {
   name: string;
@@ -90,7 +91,8 @@ export const bulkUploadStudent = async (
 
 export const bulkUploadTeacher = async (
   users: { loginUserName: string; password: string }[],
-  gradeIds: string[]
+  gradeIds: string[],
+  bookCategoryIds?: string[]
 ) => {
   // Insert all users in a transaction
   return await prisma.$transaction(
@@ -113,8 +115,19 @@ export const bulkUploadTeacher = async (
         await tx.teacherGrades.createMany({
           data: teacherGradeLinks,
         });
+        // asign book category if provided
+        if (bookCategoryIds && bookCategoryIds.length > 0) {
+          const teacherBookCategoryLinks = bookCategoryIds.map(
+            (bookCategoryId) => ({
+              teacherId: user.id,
+              categoryId: bookCategoryId,
+            })
+          );
+          await tx.teachersBookCategories.createMany({
+            data: teacherBookCategoryLinks,
+          });
+        }
       }
-
       return;
     },
     { maxWait: 10000, timeout: 60000 }

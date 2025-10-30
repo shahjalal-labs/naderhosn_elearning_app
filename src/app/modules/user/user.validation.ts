@@ -27,6 +27,9 @@ export const createNewTeacher = z.object({
       required_error: "Grade Ids is Required!",
     })
   ),
+  bookCategoryIds: z
+    .array(string({ required_error: "Book Category Ids is Required!" }))
+    .optional(),
 });
 export const createStudent = z.object({
   name: z.string({
@@ -57,6 +60,9 @@ export const StudentBulkUploadValidation = z.object({
 export const TeacherBulkUploadValidation = z.object({
   schoolId: z.string(),
   gradeIds: z.array(string()),
+  bookCategoryIds: z
+    .array(string({ required_error: "Book Category Ids is Required!" }))
+    .optional(),
   numberOfTeacher: z
     .number()
     .max(20, { message: "you can create maximum 20 at a time!" }),

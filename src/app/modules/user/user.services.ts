@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client";
+import { UserRole, BookCategory } from "@prisma/client";
 import ApiError from "../../../errors/ApiErrors";
 import prisma from "../../../shared/prisma";
 import { paginationHelper } from "../../../shared/pagination";
@@ -191,7 +191,7 @@ export const getTeachers = async (query: usersQuery) => {
 //   } else {
 //     const { password, ...sanitizedUser } = user;
 //     return sanitizedUser;
-//   } 
+//   }
 // };
 
 const getSingleUserIntoDB = async (id: string) => {
@@ -244,7 +244,6 @@ const getSingleUserIntoDB = async (id: string) => {
 
   return sanitizedUser;
 };
-
 
 const deleteUser = async (id: string) => {
   const user = await prisma.user.findUnique({
@@ -733,8 +732,16 @@ const createTeacher = async (
   payload: CreateNewTeacherType,
   file?: Express.Multer.File
 ) => {
-  const { gradeIds, schoolId, name, userName, email, password, ...rest } =
-    payload;
+  const {
+    bookCategoryIds,
+    gradeIds,
+    schoolId,
+    name,
+    userName,
+    email,
+    password,
+    ...rest
+  } = payload;
 
   const isAlreadyTakenUserName = await prisma.user.findFirst({
     where: {
@@ -745,14 +752,18 @@ const createTeacher = async (
     throw new ApiError(409, "User name already taken");
   }
   // parallel school + grade check
-  const [school, grades] = await Promise.all([
+  const [school, grades, bookCategories] = await Promise.all([
     prisma.school.findUnique({ where: { id: schoolId } }),
     prisma.grades.findMany({ where: { id: { in: gradeIds } } }),
+    prisma.bookCategory.findMany({ where: { id: { in: bookCategoryIds } } }),
   ]);
 
   if (!school) throw new ApiError(404, "School not found");
   if (!grades || grades.length === 0)
     throw new ApiError(404, "Grades not found");
+  if (bookCategories.length !== bookCategoryIds?.length) {
+    throw new ApiError(404, "Some book categories not found");
+  }
 
   const isAlreadyExist = await prisma.teacherGrades.findFirst({
     where: {
@@ -796,7 +807,17 @@ const createTeacher = async (
   await prisma.teacherGrades.createMany({
     data: teacherGradesData,
   });
+  // assign teacher to book categories
+  if (bookCategoryIds && bookCategoryIds.length > 0) {
+    const teacherBookCategoriesData = bookCategoryIds.map((bookCategoryId) => ({
+      categoryId: bookCategoryId,
+      teacherId: user.id,
+    }));
 
+    await prisma.teachersBookCategories.createMany({
+      data: teacherBookCategoriesData,
+    });
+  }
   return user;
 };
 
@@ -840,16 +861,23 @@ const bulkUploadStudentIntoDB = async (payload: {
 const bulkUploadTeacherIntoDB = async (payload: {
   schoolId: string;
   gradeIds: string[];
+  bookCategoryIds: string[];
   numberOfTeacher: number;
 }) => {
-  const [school, grades] = await Promise.all([
+  const [school, grades, bookCategories] = await Promise.all([
     prisma.school.findUnique({ where: { id: payload.schoolId } }),
     prisma.grades.findMany({ where: { id: { in: payload.gradeIds } } }),
+    prisma.bookCategory.findMany({
+      where: { id: { in: payload.bookCategoryIds } },
+    }),
   ]);
 
   if (!school) throw new ApiError(404, "School not found");
   if (grades.length !== payload.gradeIds.length) {
     throw new ApiError(404, "Some grades not found");
+  }
+  if (bookCategories.length !== payload.bookCategoryIds.length) {
+    throw new ApiError(404, "Some book categories not found");
   }
   // Generate usernames/passwords
   const users = Array.from({ length: payload.numberOfTeacher }, () => ({
@@ -861,6 +889,7 @@ const bulkUploadTeacherIntoDB = async (payload: {
     type: "teacher",
     users,
     gradeIds: payload.gradeIds,
+    bookCategoryIds: payload.bookCategoryIds,
   });
 
   return users;

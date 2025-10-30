@@ -21,7 +21,7 @@ const getGradeDetilsByIdForTeacher = catchAsync(async (req: Request, res: Respon
   const queryField = req.query.queryField as GradeQueryFilterTypeForTeacher || "students";
   const searchTerm = req.query.searchTerm as string || "";
   const query = { queryField, searchTerm };
-  const result = await teacherGradeServices.getGradesByIdForTeacher(gradeId, query);
+  const result = await teacherGradeServices.getGradesByIdForTeacher(gradeId, query , req.user);
   sendResponse(res, {
     success: true,
     statusCode: 200,

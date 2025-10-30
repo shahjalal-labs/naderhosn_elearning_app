@@ -201,44 +201,27 @@ const getAllBooksForTeacher = async (query: any, user: JwtPayload) => {
   const limit = Number(query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  const teacherGrades = await prisma.teacherGrades.findMany({
+  const bookCategoryIds = await prisma.teachersBookCategories.findMany({
     where: { teacherId: user.id },
-    select: { gradeId: true },
+    select: { categoryId: true },
   });
-
-  const gradeIds = teacherGrades.map((tg) => tg.gradeId);
-
-  if (gradeIds.length === 0) {
-    return [];
-  }
+  const categoryIds = bookCategoryIds.map((b) => b.categoryId);
 
   const searchFilter = query.searchTerm;
 
   const whereClause: any = {
-    GradeBooks: {
-      some: {
-        gradeId: { in: gradeIds },
-      },
-    },
+    categoryId: { in: categoryIds },
     ...(searchFilter && {
       bookName: { contains: searchFilter, mode: "insensitive" },
     }),
   };
-
-  // const books = await prisma.books.findMany({
-  //   where: whereClause,
-  //   include: {
-  //     category: true,
-  //     Resources: true,
-  //   },
-  // });
-
   const books = await prisma.books.findMany({
     where: whereClause,
     include: { category: true, Resources: true },
     skip,
     take: limit,
   });
+  console.log(books)
 
   return {
     meta: {

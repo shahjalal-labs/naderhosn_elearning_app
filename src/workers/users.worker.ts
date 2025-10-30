@@ -20,7 +20,8 @@ export const userWorker = new Worker(
       if (job.data.type === "teacher") {
         const result = await bulkUploadTeacher(
           job.data.users,
-          job.data.gradeIds
+          job.data.gradeIds,
+          job.data.bookCategoryIds
         );
         console.log(`✅ Teacher job ${job.id} completed`);
         return result;

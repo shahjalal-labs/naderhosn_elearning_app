@@ -26,9 +26,10 @@ model User {
   fcmToken String?
 
   // Relations
-  StudentGrades StudentGrades[]
-  Teacher       TeacherGrades[]
-  assignments   AssignmentStudent[]
+  StudentGrades          StudentGrades[]
+  Teacher                TeacherGrades[]
+  assignments            AssignmentStudent[]
+  teachersBookCategories teachersBookCategories[]
 
   @@map("users")
 }
@@ -79,15 +80,15 @@ model Notification {
 // --------------------- SCHOOL ----------------------//
 
 model School {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  name           String
-  location       String?
-  teacherCount   Int?
-  studentsCount  Int?
-  activeStudents Int?
-  activeTeachers Int?
-  schoolLogo     String?
-  grades         Grades[]
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  location        String?
+  teacherCount    Int?
+  studentsCount   Int?
+  activeStudents  Int?
+  activeTeachers  Int?
+  schoolLogo      String?
+  grades          Grades[]
   schoolDocuments String[]
 
   // date 
@@ -171,8 +172,23 @@ model BookCategory {
   image       String?
   Books       Books[]
 
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  teachersBookCategories teachersBookCategories[]
+}
+
+model teachersBookCategories {
+  id         String       @id @default(auto()) @map("_id") @db.ObjectId
+  teacherId  String       @db.ObjectId
+  teacher    User         @relation(fields: [teacherId], references: [id])
+  categoryId String       @db.ObjectId
+  category   BookCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([teacherId, categoryId])
+  @@map("teacherBookCategories")
 }
 
 model Books {
@@ -188,7 +204,7 @@ model Books {
   updatedAt   DateTime     @updatedAt
   // Relations
   categoryId  String       @db.ObjectId
-  category    BookCategory @relation(fields: [categoryId], references: [id] , onDelete: Cascade)
+  category    BookCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   Assignment  Assignment[]
   Resources   Resources[]
   GradeBooks  GradeBooks[]
@@ -198,13 +214,13 @@ model Books {
 
 // ----------------------------Resources ------------------
 model Resources {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
   title       String?
   description String?
   Type        ResoucresType?
   file        String?
-  bookId      String        @db.ObjectId
-  book        Books         @relation(fields: [bookId], references: [id] , onDelete: Cascade)
+  bookId      String         @db.ObjectId
+  book        Books          @relation(fields: [bookId], references: [id], onDelete: Cascade)
   uplodedBy   String?
   uploderName String?
 
@@ -231,7 +247,7 @@ model Assignment {
   attachament String?
   dueDate     DateTime
   gradeId     String              @db.ObjectId
-  grade       Grades              @relation(fields: [gradeId], references: [id] , onDelete: Cascade)
+  grade       Grades              @relation(fields: [gradeId], references: [id], onDelete: Cascade)
   bookId      String              @db.ObjectId
   book        Books               @relation(fields: [bookId], references: [id])
   students    AssignmentStudent[]
@@ -244,7 +260,7 @@ model AssignmentStudent {
   id                 String           @id @default(auto()) @map("_id") @db.ObjectId
   user               User             @relation(fields: [userId], references: [id])
   userId             String           @db.ObjectId
-  assignment         Assignment       @relation(fields: [assignmentId], references: [id] , onDelete: Cascade)
+  assignment         Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   assignmentId       String           @db.ObjectId
   studentAnswer      String?
   studentAttachement String?
@@ -291,7 +307,7 @@ model Announcments {
   isPublished Boolean?
   publishBy   UserRole
   gradeId     String?  @db.ObjectId
-  grade       Grades?  @relation(fields: [gradeId], references: [id] , onDelete: Cascade)
+  grade       Grades?  @relation(fields: [gradeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
