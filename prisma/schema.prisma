@@ -199,6 +199,7 @@ model Books {
   author      String?
   coverImg    String?
   file        String?
+  RTL        Boolean      @default(false)
   // Date 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

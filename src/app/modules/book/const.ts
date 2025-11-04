@@ -4,6 +4,7 @@ export interface bookData {
     description: string;
     ISBN: string;
     author: string;
+    RTL : boolean;
     categoryId: string;
   };
   Resources?: {

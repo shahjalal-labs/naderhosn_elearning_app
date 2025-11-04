@@ -120,6 +120,7 @@ const createBook = async (
       author: BookData.author,
       description: BookData.description ?? "",
       ISBN: BookData.ISBN ?? "",
+      RTL : BookData.RTL ?? false,
       coverImg,
       file,
       categoryId: BookData.categoryId,

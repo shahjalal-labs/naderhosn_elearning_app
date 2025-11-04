@@ -44,6 +44,7 @@ export const UpdateBookSchema = z.object({
     author: z.string().optional(),
     description: z.string().optional(),
     ISBN: z.string().optional(),
+    RTL : z.boolean().optional(),
     categoryId: z.string().optional(),
   }).optional(),
   NewGradesAssign: z
