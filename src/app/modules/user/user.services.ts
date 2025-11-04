@@ -369,7 +369,6 @@ export const getTeachers = async (query: usersQuery) => {
     },
   });
 
-
   return {
     meta: {
       total : result.length,
