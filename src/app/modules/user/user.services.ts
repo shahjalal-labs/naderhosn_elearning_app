@@ -42,17 +42,11 @@ import {
 export const getStudents = async (query: usersQuery) => {
   const {
     searchTerm,
-    page = 1,
-    limit = 10,
     startDate,
     endDate,
     schoolId,
     gradeIds: rawGradeIds,
   } = query;
-
-  const pageNum = Number(page) || 1;
-  const limitNum = Number(limit) || 10;
-  const skip = (pageNum - 1) * limitNum;
 
   // Parse gradeIds if it's a string
   let gradeIds: string[] | undefined;
@@ -126,24 +120,16 @@ export const getStudents = async (query: usersQuery) => {
         }
       }
     },
-    skip,
-    take: limitNum,
     orderBy: {
       joinedAt: "desc",
     },
   });
 
-  // Count total for pagination meta
-  const total = await prisma.user.count({ where });
-
   return {
     meta: {
-      total,
-      pageNum,
-      limitNum,
-      totalPages: Math.ceil(total / limitNum),
+      total : result.length,
+      result,
     },
-    result,
   };
 };
 
@@ -299,17 +285,11 @@ export const getStudents = async (query: usersQuery) => {
 export const getTeachers = async (query: usersQuery) => {
   const {
     searchTerm,
-    page = 1,
-    limit = 10,
     startDate,
     endDate,
     schoolId,
     gradeIds: rawGradeIds,
   } = query;
-
-  const pageNum = Number(page) || 1;
-  const limitNum = Number(limit) || 10;
-  const skip = (pageNum - 1) * limitNum;
 
   // Parse gradeIds if it's a string
   let gradeIds: string[] | undefined;
@@ -384,24 +364,17 @@ export const getTeachers = async (query: usersQuery) => {
         },
       },
     },
-    skip,
-    take: limitNum,
     orderBy: {
       joinedAt: "desc",
     },
   });
 
-  // Count total for pagination meta
-  const total = await prisma.user.count({ where });
 
   return {
     meta: {
-      total,
-      pageNum,
-      limitNum,
-      totalPages: Math.ceil(total / limitNum),
+      total : result.length,
+      result,
     },
-    result,
   };
 };
 

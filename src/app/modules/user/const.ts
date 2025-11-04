@@ -39,8 +39,6 @@ export interface CreateNewStudentType {
 }
 export interface usersQuery {
   searchTerm?: string;
-  page?: number;
-  limit?: number;
   schoolId?: string;
   gradeIds?: string[];
   startDate?: string; 
