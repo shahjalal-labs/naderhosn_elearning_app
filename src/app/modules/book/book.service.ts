@@ -174,7 +174,19 @@ const createBook = async (
 
 const getAllBooks = async (query: any) => {
   const keys = await getModelKeys("books");
-  const booksQuery = new QueryBuilder(prisma.books, query, keys);
+  
+  // Extract bookCategoryId and map it to categoryId
+  const { bookCategoryId, categoryId, ...restQuery } = query;
+  const finalCategoryId = categoryId || bookCategoryId;
+  
+  // Build the cleaned query object
+  const cleanedQuery = {
+    ...restQuery,
+    ...(finalCategoryId && { categoryId: finalCategoryId })
+  };
+  
+  const booksQuery = new QueryBuilder(prisma.books, cleanedQuery, keys);
+  
   const result = await booksQuery
     .search(["bookName"])
     .filter()
