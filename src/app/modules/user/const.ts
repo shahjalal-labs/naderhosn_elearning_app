@@ -41,6 +41,8 @@ export interface usersQuery {
   searchTerm?: string;
   page?: number;
   limit?: number;
+  schoolId?: string;
+  gradeIds?: string[];
   startDate?: string; 
   endDate?: string; 
 }
@@ -48,15 +50,15 @@ export interface usersQuery {
 
 export function generateStudentUserName(): string {
   const randomFiveDigits = Math.floor(10000 + Math.random() * 90000); // ensures 5 digits
-  return `s-${randomFiveDigits}`;
-}
+  return `S-${randomFiveDigits}`;
+} 
 
 export function generateTeacherUserName(): string {
   const randomFiveDigits = Math.floor(10000 + Math.random() * 90000); // ensures 5 digits
-  return `teach-${randomFiveDigits}`;
+  return `Teach-${randomFiveDigits}`;
 }
 export function randomPassword(): string {
-  const randomPart = Math.random().toString(36).substr(2, 6);
+  const randomPart = Math.random().toString(36).substr(2, 6); // Generate a random alphanumeric string of length 6
   return randomPart;
 }
 

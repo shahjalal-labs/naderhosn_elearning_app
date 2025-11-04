@@ -75,12 +75,14 @@ router.post(
 // ----------- BULK uploads ----------
 router.post(
   "/bulk-upload-student",
+  auth(UserRole.Admin),
   validateRequest(StudentBulkUploadValidation),
   UserControllers.bulkUploadStudentIntoDB
 );
 
 router.post(
   "/bulk-upload-teacher",
+  auth(UserRole.Admin),
   validateRequest(TeacherBulkUploadValidation),
   UserControllers.bulkUploadTeacherIntoDB
 );
@@ -88,5 +90,6 @@ router.post(
 // edit student and Teachers by admins
 router.patch("/update-teacher/:id", UserControllers.updateTeacherByAdmin);
 router.patch("/update-student/:id", UserControllers.updateStudentByAdmin);
+router.delete("/delete-students", auth(UserRole.Admin ,), UserControllers.deleteStudentsByAdmin);
 
 export const userRoutes = router;

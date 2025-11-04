@@ -11,6 +11,7 @@ import {
   generateStudentUserName,
   generateTeacherUserName,
   IUserGradePayload,
+  randomPassword,
   usersQuery,
 } from "./const";
 import httpStatus from "http-status";
@@ -39,17 +40,57 @@ import {
 } from "date-fns";
 
 export const getStudents = async (query: usersQuery) => {
-  const { searchTerm, page = 1, limit = 10, startDate, endDate } = query;
+  const {
+    searchTerm,
+    page = 1,
+    limit = 10,
+    startDate,
+    endDate,
+    schoolId,
+    gradeIds: rawGradeIds,
+  } = query;
 
   const pageNum = Number(page) || 1;
   const limitNum = Number(limit) || 10;
   const skip = (pageNum - 1) * limitNum;
+
+  // Parse gradeIds if it's a string
+  let gradeIds: string[] | undefined;
+  if (rawGradeIds) {
+    if (typeof rawGradeIds === 'string') {
+      try {
+        gradeIds = JSON.parse(rawGradeIds);
+      } catch {
+        gradeIds = [rawGradeIds]; // If parsing fails, treat as single ID
+      }
+    } else {
+      gradeIds = rawGradeIds;
+    }
+  }
 
   // Build where conditions
   const where: any = {
     role: "Student",
   };
 
+  // Filter by school or grade through StudentGrades relation
+  if (schoolId || (gradeIds && gradeIds.length > 0)) {
+    where.StudentGrades = {
+      some: {
+        ...(gradeIds && gradeIds.length > 0 && {
+          gradeId: {
+            in: gradeIds,
+          },
+        }),
+        ...(schoolId && {
+          grade: {
+            schoolId: schoolId,
+          },
+        }),
+      },
+    };
+  }
+
   if (searchTerm) {
     where.fullName = {
       contains: searchTerm,
@@ -64,9 +105,27 @@ export const getStudents = async (query: usersQuery) => {
     };
   }
 
-  // Fetch teachers with pagination
+  // Fetch students with pagination
   const result = await prisma.user.findMany({
     where,
+    include :{
+      StudentGrades :{
+        select :{
+          grade :{
+            select :{
+              id : true,
+              grade : true,
+              school :{
+                select :{
+                  id : true,
+                  name : true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     skip,
     take: limitNum,
     orderBy: {
@@ -88,55 +147,98 @@ export const getStudents = async (query: usersQuery) => {
   };
 };
 
-export const getTeachers = async (query: usersQuery) => {
-  const { searchTerm, page = 1, limit = 10, startDate, endDate } = query;
+// export const getTeachers = async (query: usersQuery) => {
+//   const {
+//     searchTerm,
+//     page = 1,
+//     limit = 10,
+//     startDate,
+//     endDate,
+//     schoolId,
+//     gradeIds,
+//   } = query;
 
-  const pageNum = Number(page) || 1;
-  const limitNum = Number(limit) || 10;
-  const skip = (pageNum - 1) * limitNum;
+//   const pageNum = Number(page) || 1;
+//   const limitNum = Number(limit) || 10;
+//   const skip = (pageNum - 1) * limitNum;
 
-  // Build where conditions
-  const where: any = {
-    role: "Teacher",
-  };
+//   // Build where conditions
+//   const where: any = {
+//     role: "Teacher",
+//   };
 
-  if (searchTerm) {
-    where.fullName = {
-      contains: searchTerm,
-      mode: "insensitive",
-    };
-  }
+//   if (schoolId) {
+//     where.schoolId = {
+//       every: {
+//         grade: {
+//           schoolId: schoolId ? schoolId : undefined,
+//         },
+//       },
+//     };
+//   }
+//   if (gradeIds && gradeIds.length > 0) {
+//     where.Teacher = {
+//       every: {
+//         gradeId: { in: gradeIds ? gradeIds : undefined },
+//       },
+//     };
+//   }
+//   if (searchTerm) {
+//     where.fullName = {
+//       contains: searchTerm,
+//       mode: "insensitive",
+//     };
+//   }
 
-  if (startDate && endDate) {
-    where.joinedAt = {
-      gte: new Date(startDate),
-      lte: new Date(endDate),
-    };
-  }
+//   if (startDate && endDate) {
+//     where.joinedAt = {
+//       gte: new Date(startDate),
+//       lte: new Date(endDate),
+//     };
+//   }
 
-  // Fetch teachers with pagination
-  const result = await prisma.user.findMany({
-    where,
-    skip,
-    take: limitNum,
-    orderBy: {
-      joinedAt: "desc",
-    },
-  });
+//   // Fetch teachers with pagination
+//   const result = await prisma.user.findMany({
+//     where: {
+//       ...where,
+//     },
+//     include: {
+//       Teacher: {
+//         select: {
+//           grade: {
+//             select: {
+//               grade: true,
+//               school: {
+//                 select: {
+//                   id: true,
+//                   name: true,
+//                 },
+//               },
+//             },
+//           },
+//         },
+//       },
+//     },
+//     skip,
+//     take: limitNum,
+//     orderBy: {
+//       joinedAt: "desc",
+//     },
+//   });
 
-  // Count total for pagination meta
-  const total = await prisma.user.count({ where });
+//   // Count total for pagination meta
+//   const total = await prisma.user.count({ where });
 
-  return {
-    meta: {
-      total,
-      pageNum,
-      limitNum,
-      totalPages: Math.ceil(total / limitNum),
-    },
-    result,
-  };
-};
+//   return {
+//     meta: {
+//       total,
+//       pageNum,
+//       limitNum,
+//       totalPages: Math.ceil(total / limitNum),
+//     },
+//     result,
+//   };
+// };
 
 // const getSingleUserIntoDB = async (id: string) => {
 //   // i need check is this user is student or teacher or admin the send releted includes
@@ -193,6 +295,115 @@ export const getTeachers = async (query: usersQuery) => {
 //     return sanitizedUser;
 //   }
 // };
+
+export const getTeachers = async (query: usersQuery) => {
+  const {
+    searchTerm,
+    page = 1,
+    limit = 10,
+    startDate,
+    endDate,
+    schoolId,
+    gradeIds: rawGradeIds,
+  } = query;
+
+  const pageNum = Number(page) || 1;
+  const limitNum = Number(limit) || 10;
+  const skip = (pageNum - 1) * limitNum;
+
+  // Parse gradeIds if it's a string
+  let gradeIds: string[] | undefined;
+  if (rawGradeIds) {
+    if (typeof rawGradeIds === "string") {
+      try {
+        gradeIds = JSON.parse(rawGradeIds);
+      } catch {
+        gradeIds = [rawGradeIds]; // If parsing fails, treat as single ID
+      }
+    } else {
+      gradeIds = rawGradeIds;
+    }
+  }
+
+  // Build where conditions
+  const where: any = {
+    role: "Teacher",
+  };
+
+  // Fix: Filter by school through the TeacherGrades relation
+  if (schoolId || (gradeIds && gradeIds.length > 0)) {
+    where.Teacher = {
+      some: {
+        ...(gradeIds &&
+          gradeIds.length > 0 && {
+            gradeId: {
+              in: gradeIds,
+            },
+          }),
+        ...(schoolId && {
+          grade: {
+            schoolId: schoolId,
+          },
+        }),
+      },
+    };
+  }
+
+  if (searchTerm) {
+    where.fullName = {
+      contains: searchTerm,
+      mode: "insensitive",
+    };
+  }
+
+  if (startDate && endDate) {
+    where.joinedAt = {
+      gte: new Date(startDate),
+      lte: new Date(endDate),
+    };
+  }
+
+  // Fetch teachers with pagination
+  const result = await prisma.user.findMany({
+    where,
+    include: {
+      Teacher: {
+        select: {
+          grade: {
+            select: {
+              id: true,
+              grade: true,
+              school: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    skip,
+    take: limitNum,
+    orderBy: {
+      joinedAt: "desc",
+    },
+  });
+
+  // Count total for pagination meta
+  const total = await prisma.user.count({ where });
+
+  return {
+    meta: {
+      total,
+      pageNum,
+      limitNum,
+      totalPages: Math.ceil(total / limitNum),
+    },
+    result,
+  };
+};
 
 const getSingleUserIntoDB = async (id: string) => {
   // Get user first
@@ -274,6 +485,14 @@ const deleteUser = async (id: string) => {
     },
   });
 
+  return;
+};
+const deleteStudentsByAdmin = async () => {
+  await prisma.user.deleteMany({
+    where: {
+      role: "Student",
+    },
+  });
   return;
 };
 
@@ -893,7 +1112,7 @@ const bulkUploadStudentIntoDB = async (payload: {
   // Generate usernames/passwords
   const users = Array.from({ length: payload.numberOfStudent }, () => ({
     loginUserName: generateStudentUserName(),
-    password: "123456",
+    password: randomPassword(),
   }));
 
   // Add job to queue with pre-generated users
@@ -935,7 +1154,7 @@ const bulkUploadTeacherIntoDB = async (payload: {
   // Generate usernames/passwords
   const users = Array.from({ length: payload.numberOfTeacher }, () => ({
     loginUserName: generateTeacherUserName(),
-    password: "124124",
+    password: randomPassword(),
   }));
 
   await usersQueue.add("uploadTeachers", {
@@ -972,4 +1191,5 @@ export const userService = {
   updateTeacherByAdminIntoDB,
   updateStudentByAdminIntoDB,
   adminOverViewData,
+  deleteStudentsByAdmin,
 };

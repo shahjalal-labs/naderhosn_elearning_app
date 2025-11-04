@@ -53,6 +53,14 @@ const deleteUser = catchAsync(async (req, res) => {
     message: "User deleted successfully",
   });
 });
+const deleteStudentsByAdmin = catchAsync(async (req, res) => {
+  await userService.deleteStudentsByAdmin();
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Student deleted successfully",
+  });
+});
 
 //update user
 const updateUser = catchAsync(async (req, res) => {
@@ -208,5 +216,6 @@ export const UserControllers = {
   bulkUploadStudentIntoDB,
   updateTeacherByAdmin,
   updateStudentByAdmin,
-  adminOverviewStatisticsData
+  adminOverviewStatisticsData,
+  deleteStudentsByAdmin
 };
