@@ -73,7 +73,7 @@ const createBook = catchAsync(async (req: Request, res: Response) => {
     file = (req.files["bookPdf"]?.[0] as Express.Multer.File) || undefined;
   }
   if (!file) {
-    throw new Error("Book file  are required");
+    throw new ApiError(httpStatus.BAD_REQUEST, "Book file is required");
   }
   const result = await bookServices.createBook(
     req.body,
