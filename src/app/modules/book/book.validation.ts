@@ -28,7 +28,7 @@ const BookDataSchema = z.object({
   author: z.string().optional(),
   description: z.string().optional(),
   ISBN: z.string().optional(),
-  categoryId: z.string().min(1, "Category ID is required"),
+  categoryId: z.string().min(1, { message: "Book subject is required" }),
 });
 
 // ---------- Main Body Schema ----------
@@ -39,19 +39,23 @@ export const CreateBookSchema = z.object({
 });
 
 export const UpdateBookSchema = z.object({
-  BookData: z.object({
-    bookName: z.string().optional(),
-    author: z.string().optional(),
-    description: z.string().optional(),
-    ISBN: z.string().optional(),
-    RTL: z.boolean().optional(),
-    categoryId: z.string().optional(),
-  }).optional(),
+  BookData: z
+    .object({
+      bookName: z.string().optional(),
+      author: z.string().optional(),
+      description: z.string().optional(),
+      ISBN: z.string().optional(),
+      RTL: z.boolean().optional(),
+      categoryId: z.string().optional(),
+    })
+    .optional(),
   NewGradesAssign: z
     .array(
       z.object({
         schoolId: z.string().optional(),
-        grade: z.array(z.string().regex(/^[a-f\d]{24}$/i, "Invalid grade id")).optional(),
+        grade: z
+          .array(z.string().regex(/^[a-f\d]{24}$/i, "Invalid grade id"))
+          .optional(),
       })
     )
     .optional(),
