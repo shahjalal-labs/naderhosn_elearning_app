@@ -28,7 +28,7 @@ const BookDataSchema = z.object({
   author: z.string().optional(),
   description: z.string().optional(),
   ISBN: z.string().optional(),
-  categoryId: z.string().min(1, { message: "Book subject is required" }),
+  categoryId: z.string({required_error: "Book subject is required!"}),
 });
 
 // ---------- Main Body Schema ----------
