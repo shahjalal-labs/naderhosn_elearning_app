@@ -20,8 +20,8 @@ export const UpdateSchoolSchema = z.object({
   schoolData: z.object({
     name: z.string().min(1).optional(),
     location: z.string().min(1).optional(),
-    teacherCount: z.number().int().positive().optional(),
-    studentsCount: z.number().int().positive().optional(),
+    teacherCount: z.number().int().nonnegative().optional(),
+    studentsCount: z.number().int().nonnegative().optional(),
     activeStudents: z.number().int().nonnegative().optional(),
     activeTeachers: z.number().int().nonnegative().optional(),
     schoolLogo: z.string().url().optional(),

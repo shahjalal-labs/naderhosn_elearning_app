@@ -86,36 +86,6 @@ const createSchool = async (
     },
   });
 };
- 
-// const getAllSchools = async (query: any) => {
-//   const keys = await getModelKeys("school");
-//   const usersQuery = new QueryBuilder(prisma.school, query, keys);
-//   const result = await usersQuery
-//     .search(["name", "location"])
-//     .filter()
-//     .sort()
-//     .fields()
-//     .exclude()
-//     .paginate()
-//     .include({
-//       grades : true
-//       // grades: {
-//       //   // include: {
-//       //   //   GradeBooks: {
-//       //   //     include : {
-//       //   //       "book" : true
-//       //   //     }
-//       //   //   },
-//       //   // },
-//       // },
-//     })
-//     .execute();
-//   const pagination = await usersQuery.countTotal();
-//   return {
-//     meta: pagination,
-//     result,
-//   };
-// };
 
 const getAllSchools = async (query: any) => {
   const { page = 1, limit = 10, searchTerm } = query;
