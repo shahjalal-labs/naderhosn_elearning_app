@@ -5,7 +5,7 @@ import prisma from "../../shared/prisma";
 
 const superAdminData = {
   fullName: "Admin", // Added required property
-  loginUserName : "admin01",
+  loginUserName : "Admin",
   email: "admin@gmail.com",
   password: config.super_admin_password! ,
   role: UserRole.Admin,

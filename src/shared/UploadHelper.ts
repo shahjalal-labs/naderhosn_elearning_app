@@ -2,24 +2,33 @@ import { S3Client, S3ClientConfig, ObjectCannedACL } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import path from "path";
 
+const DO_CONFIG = {
+  endpoint: "https://fra1.digitaloceanspaces.com",
+  region: "fra1",
+  credentials: {
+    accessKeyId: "DO00U7LQUH6B8FC6NRXD",
+    secretAccessKey: "5IjokHGHLokWT1DEO268edvJZGIxPoOwwjFy16pi0wI",
+  },
+  spaceName: "dac",
+};
+
+
+// DO_SPACE_ENDPOINT="https://dac.fra1.digitaloceanspaces.com"
+// DO_SPACE_ACCESS_KEY="DO00U7LQUH6B8FC6NRXD"
+// DO_SPACE_SECRET_KEY="5IjokHGHLokWT1DEO268edvJZGIxPoOwwjFy16pi0wI"
+// DO_SPACE_BUCKET="dac"
+
+
+
 // const DO_CONFIG = {
-//   endpoint: "https://dac.fra1.digitaloceanspaces.com",
+//   endpoint: "https://nyc3.digitaloceanspaces.com",
 //   region: "nyc3",
 //   credentials: {
-//     accessKeyId: "DO00U7LQUH6B8FC6NRXD",
-//     secretAccessKey: "5IjokHGHLokWT1DEO268edvJZGIxPoOwwjFy16pi0wI",
+//     accessKeyId: "DO002RGDJ947DJHJ9WDT",
+//     secretAccessKey: "e5+/pko6Ojar51Hb8ojUKfq2HtXy+tnGKOfs3rIcEfo",
 //   },
-//   spaceName: "dac",
+//   spaceName: "smtech-space",
 // };
-const DO_CONFIG = {
-  endpoint: "https://nyc3.digitaloceanspaces.com",
-  region: "nyc3",
-  credentials: {
-    accessKeyId: "DO002RGDJ947DJHJ9WDT",
-    secretAccessKey: "e5+/pko6Ojar51Hb8ojUKfq2HtXy+tnGKOfs3rIcEfo",
-  },
-  spaceName: "smtech-space",
-};
 
 
 const s3Config: S3ClientConfig = {
