@@ -15,6 +15,7 @@ import {
 
 const router = express.Router();
 
+router.delete("/delete-students", auth(UserRole.Admin ,), UserControllers.deleteStudentsByAdmin);
 router.get("/get-teachers", auth(UserRole.Admin), UserControllers.getTeachers);
 router.get("/get-students", auth(UserRole.Admin), UserControllers.getStudents);
 // add query
@@ -90,6 +91,5 @@ router.post(
 // edit student and Teachers by admins
 router.patch("/update-teacher/:id", UserControllers.updateTeacherByAdmin);
 router.patch("/update-student/:id", UserControllers.updateStudentByAdmin);
-router.delete("/delete-students", auth(UserRole.Admin ,), UserControllers.deleteStudentsByAdmin);
 
 export const userRoutes = router;
