@@ -450,15 +450,23 @@ const deleteUser = async (id: string) => {
     throw new ApiError(404, "User not found for delete");
   }
 
-  await prisma.user.update({
+  await prisma.user.delete({
     where: { id },
-    data: {
-      status: "Deleted",
-    },
   });
 
   return;
 };
+
+
+const deleteMultipleUsersByAdmin = async (usersIds : string[]) => {
+  await prisma.user.deleteMany({
+    where: {
+      id : { in : usersIds },
+    },
+  });
+  return;
+};
+
 const deleteStudentsByAdmin = async () => {
   await prisma.user.deleteMany({
     where: {
@@ -1164,4 +1172,5 @@ export const userService = {
   updateStudentByAdminIntoDB,
   adminOverViewData,
   deleteStudentsByAdmin,
+  deleteMultipleUsersByAdmin
 };

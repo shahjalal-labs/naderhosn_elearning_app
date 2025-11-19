@@ -58,7 +58,15 @@ const deleteStudentsByAdmin = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: 200,
-    message: "Student deleted successfully",
+    message: "User deleted successfully",
+  });
+});
+const deleteMultipleUsersByAdmin = catchAsync(async (req, res) => {
+  await userService.deleteMultipleUsersByAdmin(req.body.usersIds);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Users deleted successfully",
   });
 });
 
@@ -217,5 +225,6 @@ export const UserControllers = {
   updateTeacherByAdmin,
   updateStudentByAdmin,
   adminOverviewStatisticsData,
-  deleteStudentsByAdmin
+  deleteStudentsByAdmin,
+  deleteMultipleUsersByAdmin
 };

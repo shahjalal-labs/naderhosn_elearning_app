@@ -124,7 +124,7 @@ model Grades {
 model StudentGrades {
   id        String @id @default(auto()) @map("_id") @db.ObjectId
   studentId String @db.ObjectId
-  student   User   @relation(fields: [studentId], references: [id])
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   gradeId   String @db.ObjectId
   grade     Grades @relation(fields: [gradeId], references: [id], onDelete: Cascade)
 
@@ -138,7 +138,7 @@ model StudentGrades {
 model TeacherGrades {
   id        String @id @default(auto()) @map("_id") @db.ObjectId
   teacherId String @db.ObjectId
-  teacher   User   @relation(fields: [teacherId], references: [id])
+  teacher   User   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   gradeId   String @db.ObjectId
   grade     Grades @relation(fields: [gradeId], references: [id], onDelete: Cascade)
 
@@ -152,7 +152,7 @@ model TeacherGrades {
 model GradeBooks {
   id      String @id @default(auto()) @map("_id") @db.ObjectId
   bookId  String @db.ObjectId
-  book    Books  @relation(fields: [bookId], references: [id])
+  book    Books  @relation(fields: [bookId], references: [id], onDelete: Cascade)
   gradeId String @db.ObjectId
   grade   Grades @relation(fields: [gradeId], references: [id], onDelete: Cascade)
 
@@ -180,7 +180,7 @@ model BookCategory {
 model teachersBookCategories {
   id         String       @id @default(auto()) @map("_id") @db.ObjectId
   teacherId  String       @db.ObjectId
-  teacher    User         @relation(fields: [teacherId], references: [id])
+  teacher    User         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   categoryId String       @db.ObjectId
   category   BookCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
@@ -199,7 +199,7 @@ model Books {
   author      String?
   coverImg    String?
   file        String?
-  RTL        Boolean      @default(false)
+  RTL         Boolean      @default(false)
   // Date 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -250,7 +250,7 @@ model Assignment {
   gradeId     String              @db.ObjectId
   grade       Grades              @relation(fields: [gradeId], references: [id], onDelete: Cascade)
   bookId      String              @db.ObjectId
-  book        Books               @relation(fields: [bookId], references: [id])
+  book        Books               @relation(fields: [bookId], references: [id], onDelete: Cascade)
   students    AssignmentStudent[]
 
   createdAt DateTime @default(now())
@@ -259,7 +259,7 @@ model Assignment {
 
 model AssignmentStudent {
   id                 String           @id @default(auto()) @map("_id") @db.ObjectId
-  user               User             @relation(fields: [userId], references: [id])
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId             String           @db.ObjectId
   assignment         Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   assignmentId       String           @db.ObjectId

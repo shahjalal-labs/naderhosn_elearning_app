@@ -15,7 +15,8 @@ import {
 
 const router = express.Router();
 
-router.delete("/delete-students", auth(UserRole.Admin ,), UserControllers.deleteStudentsByAdmin);
+router.delete("/delete-students", auth(UserRole.Admin), UserControllers.deleteStudentsByAdmin);
+router.delete("/delete-multiple", auth(UserRole.Admin), UserControllers.deleteMultipleUsersByAdmin);
 router.get("/get-teachers", auth(UserRole.Admin), UserControllers.getTeachers);
 router.get("/get-students", auth(UserRole.Admin), UserControllers.getStudents);
 // add query
