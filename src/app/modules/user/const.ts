@@ -56,7 +56,7 @@ export function generateTeacherUserName(): string {
   return `Teach-${randomFiveDigits}`;
 }
 export function randomPassword(): string {
-  const randomPart = Math.random().toString(36).substr(2, 6); // Generate a random alphanumeric string of length 6
+  const randomPart = Math.random().toString(36).substr(2, 4); // Generate a random alphanumeric string of length 4
   return randomPart;
 }
 
