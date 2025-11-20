@@ -51,7 +51,7 @@ export const getStudents = async (query: usersQuery) => {
   // Parse gradeIds if it's a string
   let gradeIds: string[] | undefined;
   if (rawGradeIds) {
-    if (typeof rawGradeIds === 'string') {
+    if (typeof rawGradeIds === "string") {
       try {
         gradeIds = JSON.parse(rawGradeIds);
       } catch {
@@ -71,11 +71,12 @@ export const getStudents = async (query: usersQuery) => {
   if (schoolId || (gradeIds && gradeIds.length > 0)) {
     where.StudentGrades = {
       some: {
-        ...(gradeIds && gradeIds.length > 0 && {
-          gradeId: {
-            in: gradeIds,
-          },
-        }),
+        ...(gradeIds &&
+          gradeIds.length > 0 && {
+            gradeId: {
+              in: gradeIds,
+            },
+          }),
         ...(schoolId && {
           grade: {
             schoolId: schoolId,
@@ -86,10 +87,28 @@ export const getStudents = async (query: usersQuery) => {
   }
 
   if (searchTerm) {
-    where.fullName = {
-      contains: searchTerm,
-      mode: "insensitive",
-    };
+    where.OR = [
+      {
+        fullName: {
+          contains: searchTerm,
+          mode: "insensitive",
+        },
+      },
+      {
+        StudentGrades: {
+          some: {
+            grade: {
+              school: {
+                name: {
+                  contains: searchTerm,
+                  mode: "insensitive",
+                },
+              },
+            },
+          },
+        },
+      },
+    ];
   }
 
   if (startDate && endDate) {
@@ -102,23 +121,23 @@ export const getStudents = async (query: usersQuery) => {
   // Fetch students with pagination
   const result = await prisma.user.findMany({
     where,
-    include :{
-      StudentGrades :{
-        select :{
-          grade :{
-            select :{
-              id : true,
-              grade : true,
-              school :{
-                select :{
-                  id : true,
-                  name : true
-                }
-              }
-            }
-          }
-        }
-      }
+    include: {
+      StudentGrades: {
+        select: {
+          grade: {
+            select: {
+              id: true,
+              grade: true,
+              school: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
     orderBy: {
       joinedAt: "desc",
@@ -127,7 +146,7 @@ export const getStudents = async (query: usersQuery) => {
 
   return {
     meta: {
-      total : result.length,
+      total: result.length,
       result,
     },
   };
@@ -329,11 +348,30 @@ export const getTeachers = async (query: usersQuery) => {
     };
   }
 
+  
   if (searchTerm) {
-    where.fullName = {
-      contains: searchTerm,
-      mode: "insensitive",
-    };
+    where.OR = [
+      {
+        fullName: {
+          contains: searchTerm,
+          mode: "insensitive",
+        },
+      },
+      {
+        Teacher: {
+          some: {
+            grade: {
+              school: {
+                name: {
+                  contains: searchTerm,
+                  mode: "insensitive",
+                },
+              },
+            },
+          },
+        },
+      },
+    ];
   }
 
   if (startDate && endDate) {
@@ -371,7 +409,7 @@ export const getTeachers = async (query: usersQuery) => {
 
   return {
     meta: {
-      total : result.length,
+      total: result.length,
       result,
     },
   };
@@ -457,11 +495,10 @@ const deleteUser = async (id: string) => {
   return;
 };
 
-
-const deleteMultipleUsersByAdmin = async (usersIds : string[]) => {
+const deleteMultipleUsersByAdmin = async (usersIds: string[]) => {
   await prisma.user.deleteMany({
     where: {
-      id : { in : usersIds },
+      id: { in: usersIds },
     },
   });
   return;
@@ -1172,5 +1209,5 @@ export const userService = {
   updateStudentByAdminIntoDB,
   adminOverViewData,
   deleteStudentsByAdmin,
-  deleteMultipleUsersByAdmin
+  deleteMultipleUsersByAdmin,
 };
