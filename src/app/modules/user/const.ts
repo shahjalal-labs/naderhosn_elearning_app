@@ -38,6 +38,7 @@ export interface CreateNewStudentType {
   gradeId: string;
 }
 export interface usersQuery {
+  schoolName?: string;
   searchTerm?: string;
   schoolId?: string;
   gradeIds?: string[];
@@ -48,12 +49,12 @@ export interface usersQuery {
 
 export function generateStudentUserName(): string {
   const randomFiveDigits = Math.floor(10000 + Math.random() * 90000); // ensures 5 digits
-  return `S-${randomFiveDigits}`;
+  return `s${randomFiveDigits}`;
 } 
 
 export function generateTeacherUserName(): string {
   const randomFiveDigits = Math.floor(10000 + Math.random() * 90000); // ensures 5 digits
-  return `Teach-${randomFiveDigits}`;
+  return `teach${randomFiveDigits}`;
 }
 export function randomPassword(): string {
   const random4Digit = Math.floor(1000 + Math.random() * 9000);

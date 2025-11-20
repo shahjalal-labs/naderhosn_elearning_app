@@ -41,6 +41,7 @@ import {
 
 export const getStudents = async (query: usersQuery) => {
   const {
+    schoolName,
     searchTerm,
     startDate,
     endDate,
@@ -87,28 +88,35 @@ export const getStudents = async (query: usersQuery) => {
   }
 
   if (searchTerm) {
-    where.OR = [
-      {
-        fullName: {
-          contains: searchTerm,
-          mode: "insensitive",
+      where.OR = [
+        {
+          fullName: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
         },
-      },
-      {
-        StudentGrades: {
-          some: {
-            grade: {
-              school: {
-                name: {
-                  contains: searchTerm,
-                  mode: "insensitive",
-                },
-              },
+        {
+          loginUserName: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
+  if (schoolName) {
+    where.StudentGrades = {
+      some: {
+        grade: {
+          school: {
+            name: {
+              contains: schoolName,
+              mode: "insensitive",
             },
           },
         },
       },
-    ];
+    };
   }
 
   if (startDate && endDate) {
@@ -152,157 +160,9 @@ export const getStudents = async (query: usersQuery) => {
   };
 };
 
-// export const getTeachers = async (query: usersQuery) => {
-//   const {
-//     searchTerm,
-//     page = 1,
-//     limit = 10,
-//     startDate,
-//     endDate,
-//     schoolId,
-//     gradeIds,
-//   } = query;
-
-//   const pageNum = Number(page) || 1;
-//   const limitNum = Number(limit) || 10;
-//   const skip = (pageNum - 1) * limitNum;
-
-//   // Build where conditions
-//   const where: any = {
-//     role: "Teacher",
-//   };
-
-//   if (schoolId) {
-//     where.schoolId = {
-//       every: {
-//         grade: {
-//           schoolId: schoolId ? schoolId : undefined,
-//         },
-//       },
-//     };
-//   }
-//   if (gradeIds && gradeIds.length > 0) {
-//     where.Teacher = {
-//       every: {
-//         gradeId: { in: gradeIds ? gradeIds : undefined },
-//       },
-//     };
-//   }
-//   if (searchTerm) {
-//     where.fullName = {
-//       contains: searchTerm,
-//       mode: "insensitive",
-//     };
-//   }
-
-//   if (startDate && endDate) {
-//     where.joinedAt = {
-//       gte: new Date(startDate),
-//       lte: new Date(endDate),
-//     };
-//   }
-
-//   // Fetch teachers with pagination
-//   const result = await prisma.user.findMany({
-//     where: {
-//       ...where,
-//     },
-//     include: {
-//       Teacher: {
-//         select: {
-//           grade: {
-//             select: {
-//               grade: true,
-//               school: {
-//                 select: {
-//                   id: true,
-//                   name: true,
-//                 },
-//               },
-//             },
-//           },
-//         },
-//       },
-//     },
-//     skip,
-//     take: limitNum,
-//     orderBy: {
-//       joinedAt: "desc",
-//     },
-//   });
-
-//   // Count total for pagination meta
-//   const total = await prisma.user.count({ where });
-
-//   return {
-//     meta: {
-//       total,
-//       pageNum,
-//       limitNum,
-//       totalPages: Math.ceil(total / limitNum),
-//     },
-//     result,
-//   };
-// };
-
-// const getSingleUserIntoDB = async (id: string) => {
-//   // i need check is this user is student or teacher or admin the send releted includes
-//   const user = await prisma.user.findUnique({
-//     where: { id },
-//   });
-//   if (!user) {
-//     throw new ApiError(404, "user not found!");
-//   }
-
-//   const userRole = user.role;
-//   if (userRole === "Student") {
-//     const student = await prisma.user.findUnique({
-//       where: { id, role: "Student" },
-//       include: {
-//         StudentGrades: {
-//           where: {
-//             studentId: id,
-//           },
-//           include: {
-//             grade: {
-//               select: {
-//                 school: true,
-//               },
-//             },
-//           },
-//         },
-//         assignments: true,
-//       },
-//     });
-//     return student;
-//   } else if (userRole === "Teacher") {
-//     const teacher = await prisma.user.findUnique({
-//       where: { id, role: "Teacher" },
-//       include: {
-//         Teacher: {
-//           where: {
-//             teacherId: id,
-//           },
-//           include: {
-//             grade: {
-//               include: {
-//                 school: true,
-//               },
-//             },
-//           },
-//         },
-//       },
-//     });
-//       const { password, ...sanitizedUser } = teacher;
-//     return sanitizedUser;
-//   } else {
-//     const { password, ...sanitizedUser } = user;
-//     return sanitizedUser;
-//   }
-// };
-
 export const getTeachers = async (query: usersQuery) => {
   const {
+    schoolName,
     searchTerm,
     startDate,
     endDate,
@@ -348,30 +208,36 @@ export const getTeachers = async (query: usersQuery) => {
     };
   }
 
-  
   if (searchTerm) {
-    where.OR = [
-      {
-        fullName: {
-          contains: searchTerm,
-          mode: "insensitive",
+      where.OR = [
+        {
+          fullName: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
         },
-      },
-      {
-        Teacher: {
-          some: {
-            grade: {
-              school: {
-                name: {
-                  contains: searchTerm,
-                  mode: "insensitive",
-                },
-              },
+        {
+          loginUserName: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
+  if (schoolName) {
+    where.Teacher = {
+      some: {
+        grade: {
+          school: {
+            name: {
+              contains: searchTerm,
+              mode: "insensitive",
             },
           },
         },
       },
-    ];
+    };
   }
 
   if (startDate && endDate) {
