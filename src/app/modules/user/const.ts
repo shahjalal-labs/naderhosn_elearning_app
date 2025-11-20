@@ -56,9 +56,10 @@ export function generateTeacherUserName(): string {
   return `Teach-${randomFiveDigits}`;
 }
 export function randomPassword(): string {
-  const randomPart = Math.random().toFixed(4); // Generate a random alphanumeric string of length 4
-  return randomPart;
+  const random4Digit = Math.floor(1000 + Math.random() * 9000);
+  return random4Digit.toString();
 }
+
 
 export const bulkUploadStudent = async (
   users: { loginUserName: string; password: string }[],
