@@ -88,21 +88,21 @@ export const getStudents = async (query: usersQuery) => {
   }
 
   if (searchTerm) {
-      where.OR = [
-        {
-          fullName: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
+    where.OR = [
+      {
+        fullName: {
+          contains: searchTerm,
+          mode: "insensitive",
         },
-        {
-          loginUserName: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
+      },
+      {
+        loginUserName: {
+          contains: searchTerm,
+          mode: "insensitive",
         },
-      ];
-    }
+      },
+    ];
+  }
 
   if (schoolName) {
     where.StudentGrades = {
@@ -209,29 +209,29 @@ export const getTeachers = async (query: usersQuery) => {
   }
 
   if (searchTerm) {
-      where.OR = [
-        {
-          fullName: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
+    where.OR = [
+      {
+        fullName: {
+          contains: searchTerm,
+          mode: "insensitive",
         },
-        {
-          loginUserName: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
+      },
+      {
+        loginUserName: {
+          contains: searchTerm,
+          mode: "insensitive",
         },
-      ];
-    }
+      },
+    ];
+  }
 
   if (schoolName) {
     where.Teacher = {
       some: {
         grade: {
-          school: {
+          school: { 
             name: {
-              contains: searchTerm,
+              contains: schoolName,
               mode: "insensitive",
             },
           },
