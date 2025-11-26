@@ -9,8 +9,8 @@ import { sendGroupNotifications } from "../notifications/notification.services";
 const createResource = async (
   data: Resources,
   bookId: string,
-  file: Express.Multer.File,
-  user: JwtPayload
+  user: JwtPayload,
+  file?: Express.Multer.File,
 ) => {
   const isBookExist = await prisma.books.findFirst({
     where: { id: bookId },
@@ -29,12 +29,12 @@ const createResource = async (
   if (!isBookExist) {
     throw new ApiError(httpStatus.NOT_FOUND, "Book not found");
   }
-  const fileUpload = (await uploadToDigitalOceanAWS(file)).Location;
-  await prisma.resources.create({
+  const fileUpload = file ? (await uploadToDigitalOceanAWS(file)).Location : undefined;
+  const res = await prisma.resources.create({
     data: {
       ...data,
       bookId,
-      file: fileUpload,
+      file: fileUpload ? fileUpload : data.file,
       uploderName: user.fullName ?? "",
       uplodedBy: user.role,
     },
@@ -49,7 +49,7 @@ const createResource = async (
   } catch (err) {
     console.error("Failed to send announcement notifications:", err);
   }
-  return 
+  return res
 };
 
 const getAllResources = async () => {
