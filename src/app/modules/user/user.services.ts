@@ -1036,7 +1036,10 @@ const bulkUploadTeacherIntoDB = async (payload: {
     bookCategoryIds: payload.bookCategoryIds,
   });
 
-  return users;
+ return {
+    message: "Teacher bulk upload job has been queued",
+    teachers: users,
+  };
 };
 
 const updateTeacherByAdminIntoDB = async (id: string, payload: any) => {

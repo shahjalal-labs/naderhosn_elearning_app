@@ -151,7 +151,7 @@ const createStudent = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: 200,
-    message: "stucent created  successfully",
+    message: "student created  successfully",
     data: result,
   });
 });
@@ -183,8 +183,8 @@ const bulkUploadTeacherIntoDB = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: 200,
-    message: "teachers created  successfully",
-    data: result,
+    message: result.message,
+    data: result.teachers,
   });
 });
 const updateTeacherByAdmin = catchAsync(async (req, res) => {
