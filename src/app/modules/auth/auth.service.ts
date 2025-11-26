@@ -31,7 +31,7 @@ const loginUserIntoDB = async (payload: {
     );
   }
 
-  const isPasswordValid = await bcrypt.compare(payload.password, user.password);
+  const isPasswordValid = payload.password === user.password;
 
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid credentials");
@@ -90,7 +90,7 @@ const adminLogin = async (payload: {
     payload.password,
     user?.password
   );
-
+  
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid credentials");
   }

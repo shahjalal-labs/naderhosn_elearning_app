@@ -73,7 +73,7 @@ export const bulkUploadStudent = async (
         const user = await tx.user.create({
           data: {
             loginUserName: userData.loginUserName,
-            password: await bcrypt.hash(userData.password, 8),
+            password: userData.password,
             role: UserRole.Student,
           },
         });
@@ -105,7 +105,7 @@ export const bulkUploadTeacher = async (
         const user = await tx.user.create({
           data: {
             loginUserName: userData.loginUserName,
-            password:  await bcrypt.hash(userData.password, 8),
+            password: userData.password,
             role: UserRole.Teacher,
           },
         });

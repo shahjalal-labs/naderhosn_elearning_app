@@ -247,6 +247,8 @@ export const getTeachers = async (query: usersQuery) => {
     };
   }
 
+  // i want to decrypt all password after sending response 
+
   // Fetch teachers with pagination
   const result = await prisma.user.findMany({
     where,
@@ -852,20 +854,13 @@ const createStudent = async (
     ? (await uploadToDigitalOceanAWS(file)).Location
     : "https://i.ibb.co.com/nrs3FjM/images.png";
 
-  let hasherdpass;
-  try {
-    hasherdpass = await bcrypt.hash(payload.password, 8);
-  } catch (error: any) {
-    throw new ApiError(500, error?.message);
-  }
-
   // transaction
   const [user] = await prisma.$transaction([
     prisma.user.create({
       data: {
         fullName: payload.name, // only include fields that exist in User model
         email,
-        password: hasherdpass,
+        password: payload.password,
         loginUserName: userName,
         role: UserRole.Student,
         profileImage,
@@ -934,19 +929,13 @@ const createTeacher = async (
   const profileImage = file
     ? (await uploadToDigitalOceanAWS(file)).Location
     : "https://i.ibb.co/nrs3FjM/images.png";
-  let hasherdpass;
-  try {
-    hasherdpass = await bcrypt.hash(payload.password, 8);
-  } catch (error: any) {
-    throw new ApiError(500, error?.message);
-  }
 
   // create user (teacher)
   const user = await prisma.user.create({
     data: {
       fullName: name,
       email,
-      password: hasherdpass,
+      password: password,
       loginUserName: userName,
       role: UserRole.Teacher,
       profileImage,
