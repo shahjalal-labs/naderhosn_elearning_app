@@ -128,6 +128,7 @@ const getBookById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+
 const updateBook = catchAsync(async (req: Request, res: Response) => {
   let coverImg: Express.Multer.File | undefined;
   let file: Express.Multer.File | undefined;
@@ -187,5 +188,5 @@ export const bookControllers = {
   deleteBooksCategory,
   uploadResourcesFile,
   getAllBooksForForms,
-  getAllBooksForTeacher
+  getAllBooksForTeacher,
 };

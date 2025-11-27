@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Learning Books - Test Page</title>
+    <link rel="stylesheet" href="/public/styles.css">
+    <!-- PDF.js for fast PDF rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- jQuery for Turn.js -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Turn.js for flip book effect -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 E-Learning Books Library</h1>
+            <p class="subtitle">Test Page for Book Listing & PDF Viewer</p>
+        </header>
+
+        <!-- Search and Filter Section -->
+        <div class="search-section">
+            <input type="text" id="searchInput" placeholder="Search books by name..." class="search-input">
+            <button onclick="loadBooks()" class="btn-primary">Search</button>
+            <button onclick="resetSearch()" class="btn-secondary">Reset</button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading books...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <!-- Books Grid -->
+        <div id="booksGrid" class="books-grid"></div>
+
+        <!-- Pagination -->
+        <div id="pagination" class="pagination"></div>
+    </div>
+
+    <!-- Modal for PDF Viewer -->
+    <div id="pdfModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Book Preview</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <!-- Top Toolbar with annotation tools -->
+            <div class="pdf-toolbar">
+                <div class="toolbar-section">
+                    <button class="toolbar-btn" onclick="selectTool('cursor')" id="cursorBtn" title="Select/Cursor Tool">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+                        </svg>
+                    </button>
+                    <button class="toolbar-btn" onclick="selectTool('pen')" id="penBtn" title="Pen Tool">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                            <path d="M2 2l7.586 7.586"/>
+                        </svg>
+                    </button>
+                    <button class="toolbar-btn" onclick="selectTool('highlight')" id="highlightBtn" title="Highlight Tool">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="4" rx="1"/>
+                            <path d="M6 7v10"/>
+                            <path d="M18 7v10"/>
+                            <rect x="3" y="17" width="18" height="4" rx="1"/>
+                        </svg>
+                    </button>
+                    <button class="toolbar-btn" onclick="selectTool('underline')" id="underlineBtn" title="Underline">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 3v7a6 6 0 0 0 12 0V3"/>
+                            <line x1="4" y1="21" x2="20" y2="21"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="toolbar-section">
+                    <button class="toolbar-btn" onclick="toggleViewMode()" id="viewModeBtn" title="Toggle View Mode">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="18" rx="2"/>
+                            <line x1="12" y1="3" x2="12" y2="21"/>
+                        </svg>
+                    </button>
+                    <button class="toolbar-btn" onclick="searchInPDF()" title="Search in PDF">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                    </button>
+                    <button class="toolbar-btn" onclick="zoomOut()" title="Zoom Out">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                            <line x1="8" y1="11" x2="14" y2="11"/>
+                        </svg>
+                    </button>
+                    <button class="toolbar-btn" onclick="zoomIn()" title="Zoom In">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                            <line x1="11" y1="8" x2="11" y2="14"/>
+                            <line x1="8" y1="11" x2="14" y2="11"/>
+                        </svg>
+                    </button>
+                    <button class="toolbar-btn" onclick="downloadPDF()" title="Download PDF">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                    </button>
+                    <button class="toolbar-btn" onclick="printPDF()" title="Print PDF">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 6 2 18 2 18 9"/>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                            <rect x="6" y="14" width="12" height="8"/>
+                        </svg>
+                    </button>
+                    <button class="toolbar-btn" onclick="copyText()" title="Copy Text">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                    </button>
+                    <button class="toolbar-btn" onclick="shareDocument()" title="Share">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="18" cy="5" r="3"/>
+                            <circle cx="6" cy="12" r="3"/>
+                            <circle cx="18" cy="19" r="3"/>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                        </svg>
+                    </button>
+                    <button class="toolbar-btn" onclick="toggleBookmark()" title="Bookmark">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Color Picker for annotations -->
+                <div class="toolbar-section color-picker" id="colorPicker" style="display: none;">
+                    <button class="color-btn" onclick="selectColor('#FF6B6B')" style="background: #FF6B6B;" title="Red"></button>
+                    <button class="color-btn" onclick="selectColor('#4ECDC4')" style="background: #4ECDC4;" title="Cyan"></button>
+                    <button class="color-btn" onclick="selectColor('#A8E6CF')" style="background: #A8E6CF;" title="Green"></button>
+                    <button class="color-btn" onclick="selectColor('#FFD93D')" style="background: #FFD93D;" title="Yellow"></button>
+                    <button class="color-btn" onclick="selectColor('#A78BFA')" style="background: #A78BFA;" title="Purple"></button>
+                </div>
+            </div>
+            
+            <!-- Bottom Navigation Bar -->
+            <div class="pdf-navigation">
+                <button class="nav-btn" onclick="previousPage()" id="prevBtn" title="Previous Page">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <span id="pageInfo" class="page-info-display">Page 1 of 1</span>
+                <button class="nav-btn" onclick="nextPage()" id="nextBtn" title="Next Page">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </button>
+                <span id="zoomInfo" class="zoom-display">100%</span>
+            </div>
+            <div class="modal-body">
+                <div id="pdfLoadingIndicator" class="pdf-loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Loading PDF...</p>
+                </div>
+                
+                <!-- Single Page View -->
+                <div id="singlePageView" class="pdf-canvas-container">
+                    <canvas id="pdfCanvas"></canvas>
+                </div>
+                
+                <!-- Flip Book View -->
+                <div id="flipBookView" class="flipbook-container" style="display: none;">
+                    <div id="flipbook" class="flipbook"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/public/script.js"></script>
+</body>
+</html>

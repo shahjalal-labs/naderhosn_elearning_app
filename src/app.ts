@@ -26,11 +26,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+app.use("/public", express.static(path.join(__dirname, "..", "public")));
 
 app.get("/", (req: Request, res: Response) => {
   res.send({
     Message: "🫡 Hellow there !  Welcome Nadir Hossain E-Learning Backend",
   });
+});
+
+// Test page route - redirect to the public HTML page
+app.get("/test-books", (req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
 });
 app.use(
   "/admin/queues",
