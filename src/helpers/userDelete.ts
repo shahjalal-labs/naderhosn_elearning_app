@@ -362,3 +362,130 @@ export const deleteData = () => {
  
  `;
 };
+
+
+export const privacyPolicy = () => {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Privacy Policy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f6f6f6;
+    padding: 0;
+    margin: 0;
+  }
+
+  .container {
+    max-width: 700px;
+    margin: 60px auto;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+  }
+
+  h3 {
+    margin-top: 25px;
+    margin-bottom: 10px;
+    color: #444;
+    font-size: 16px;
+  }
+
+  p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #555;
+    margin-bottom: 12px;
+  }
+
+  ul {
+    padding-left: 18px;
+    margin-bottom: 15px;
+  }
+
+  ul li {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 8px;
+  }
+
+  .footer-note {
+    margin-top: 25px;
+    font-size: 13px;
+    color: #777;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Privacy Policy</h2>
+
+  <p>
+    Your privacy is important to us. This Privacy Policy explains how we collect,
+    use, and protect your personal information when you use our services.
+  </p>
+
+  <h3>1. Information We Collect</h3>
+  <p>We may collect the following information:</p>
+  <ul>
+    <li>Personal details such as name and email address</li>
+    <li>Account and login information</li>
+    <li>Usage data to improve our services</li>
+  </ul>
+
+  <h3>2. How We Use Your Information</h3>
+  <p>Your information is used to:</p>
+  <ul>
+    <li>Provide and maintain our services</li>
+    <li>Improve user experience</li>
+    <li>Communicate important updates</li>
+  </ul>
+
+  <h3>3. Data Security</h3>
+  <p>
+    We implement appropriate security measures to protect your personal data
+    from unauthorized access or disclosure.
+  </p>
+
+  <h3>4. Data Sharing</h3>
+  <p>
+    We do not sell or share your personal data with third parties except when
+    required by law or to provide our services.
+  </p>
+
+  <h3>5. Your Rights</h3>
+  <p>
+    You have the right to access, update, or request deletion of your personal
+    data at any time.
+  </p>
+
+  <h3>6. Changes to This Policy</h3>
+  <p>
+    We may update this Privacy Policy from time to time. Any changes will be
+    posted on this page.
+  </p>
+
+  <div class="footer-note">
+    Last updated: ${new Date().toLocaleDateString()}
+  </div>
+</div>
+
+</body>
+</html>`;
+};
