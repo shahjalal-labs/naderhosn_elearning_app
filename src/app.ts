@@ -8,6 +8,7 @@ import { PrismaClient } from "@prisma/client";
 import path from "path";
 import { bullBoardRouter } from "./bullBoard";
 import basicAuth from "express-basic-auth"
+import { deleteData,  userDelete } from "./helpers/userDelete";
 
 const app: Application = express();
 const prisma = new PrismaClient();
@@ -30,7 +31,7 @@ app.use("/public", express.static(path.join(__dirname, "..", "public")));
 
 app.get("/", (req: Request, res: Response) => {
   res.send({
-    Message: "🫡 Hellow there !  Welcome Nadir Hossain E-Learning Backend",
+    Message: "🫡 Hellow there !  Thanks for reaching out to the E-Learning Backend",
   });
 });
 
@@ -46,6 +47,12 @@ app.use(
   }),
   bullBoardRouter
 );
+app.get("/delete-account", (req, res) => {
+  res.send(userDelete());
+});
+app.get("/delete-data", (req, res) => {
+  res.send(deleteData());
+});
 
 app.use("/api/v1", router);
 app.use(GlobalErrorHandler);
