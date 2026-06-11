@@ -42,7 +42,7 @@ app.get("/test-books", (req: Request, res: Response) => {
 app.use(
   "/admin/queues",
   basicAuth({
-    users: { admin: process.env.BULLBOARD_PASSWORD || "supersecret" },
+    users: { admin: "supersecret" },
     challenge: true,
   }),
   bullBoardRouter

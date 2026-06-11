@@ -35,6 +35,8 @@ const getAllSchoolsForForms = catchAsync(async (_req: Request, res: Response) =>
   });
 })
 
+
+
 const getDownloadSchoolData = catchAsync(async (_req: Request, res: Response) => {
   const { location, gradeRange, count } = _req.query as { [key: string]: any };
   const query = {
@@ -105,6 +107,26 @@ const uploadSchoolDocuments = catchAsync(async (req: Request, res: Response) => 
     data: result,
   });
 })
+
+const assignBooksToSchool = catchAsync(async (req: Request, res: Response) => {
+  const result = await schoolServices.assignBooksToSchool(req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Books assigned to school grades successfully",
+    data: result,
+  });
+});
+const getNotAssignedBooksForSchool = catchAsync(async (req: Request, res: Response) => {
+  const result = await schoolServices.getNotAssignedBooksForSchool(req.params.id);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Not assigned books for the school retrieved successfully",
+    data: result,
+  });
+});
+
  
 export const schoolControllers = {
   createSchool,
@@ -114,6 +136,8 @@ export const schoolControllers = {
   deleteSchool,
   getDownloadSchoolData,
   getAllSchoolsForForms,
-  uploadSchoolDocuments
+  uploadSchoolDocuments,
+  assignBooksToSchool,
+  getNotAssignedBooksForSchool
 }
   

@@ -5,7 +5,7 @@ import { parseBodyData } from "../../middlewares/parseBodyData";
 import auth from "../../middlewares/auth";
 import { UserRole } from "@prisma/client";
 import validateRequest from "../../middlewares/validateRequest";
-import { CreateSchoolSchema, UpdateSchoolSchema } from "./school.validation";
+import { AssignBooksToSchoolSchema, CreateSchoolSchema, UpdateSchoolSchema } from "./school.validation";
 
 const router = express.Router();
 
@@ -30,8 +30,15 @@ router.patch(
   schoolControllers.updateSchool
 );
 router.delete("/:id", auth(UserRole.Admin), schoolControllers.deleteSchool);
-
 router.post("/upload-file", auth(UserRole.Admin) , fileUploader.uploadFiles , schoolControllers.uploadSchoolDocuments)
+router.post(
+  "/assign-books",
+  // auth(UserRole.Admin),
+  validateRequest(AssignBooksToSchoolSchema),
+  schoolControllers.assignBooksToSchool
+);
+router.get("/not-assigned-books/:id", schoolControllers.getNotAssignedBooksForSchool);
+
 
 
 export const schoolRoutes = router;

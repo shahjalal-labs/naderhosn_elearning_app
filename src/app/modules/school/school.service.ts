@@ -24,7 +24,7 @@ type CreateSchoolInput = Pick<
 
 const createSchool = async (
   data: CreateSchoolInput,
-  file?: Express.Multer.File
+  file?: Express.Multer.File,
 ) => {
   const {
     name,
@@ -34,7 +34,7 @@ const createSchool = async (
     studentsCount,
     teacherCount,
     grades,
-    schoolDocuments
+    schoolDocuments,
   } = data;
 
   const isExist = await prisma.school.findFirst({
@@ -52,20 +52,20 @@ const createSchool = async (
     if (seen.has(key)) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `Duplicate grade-section found: Grade ${g.gradeLevel}`
+        `Duplicate grade-section found: Grade ${g.gradeLevel}`,
       );
     }
     seen.add(key);
   }
 
   try {
-    if(file){
+    if (file) {
       schoolLogo = (await uploadToDigitalOceanAWS(file)).Location;
     }
   } catch (error) {
     throw new ApiError(
       httpStatus.NOT_ACCEPTABLE,
-      "Failed to upload school logo"
+      "Failed to upload school logo",
     );
   }
   return await prisma.school.create({
@@ -82,7 +82,7 @@ const createSchool = async (
           grade: g.gradeLevel,
         })),
       },
-      schoolDocuments
+      schoolDocuments,
     },
   });
 };
@@ -126,11 +126,11 @@ const getAllSchools = async (query: any) => {
   const result = schools.map((school) => {
     const studentsCount = school.grades.reduce(
       (acc, grade) => acc + grade._count.StudentGrades,
-      0
+      0,
     );
     const teacherCount = school.grades.reduce(
       (acc, grade) => acc + grade._count.TeacherGrades,
-      0
+      0,
     );
 
     return {
@@ -155,10 +155,9 @@ const getAllSchools = async (query: any) => {
       limit: Number(limit),
       totalPages: Math.ceil(total / Number(limit)),
     },
-    schools : result,
+    schools: result,
   };
 };
-
 
 const getSchoolById = async (id: string) => {
   const school = await prisma.school.findUnique({
@@ -210,8 +209,13 @@ const getSchoolById = async (id: string) => {
 
 const updateSchool = async (
   id: string,
-  data: { schoolData: any; DeleteGrades: string[]; grades: any[] , schoolDocuments : string[] },
-  file?: Express.Multer.File
+  data: {
+    schoolData: any;
+    DeleteGrades: string[];
+    grades: any[];
+    schoolDocuments: string[];
+  },
+  file?: Express.Multer.File,
 ) => {
   // 1. Check if school exists
   const isExist = await prisma.school.findUnique({
@@ -231,7 +235,7 @@ const updateSchool = async (
     } catch (error) {
       throw new ApiError(
         httpStatus.NOT_ACCEPTABLE,
-        "Failed to upload school logo"
+        "Failed to upload school logo",
       );
     }
   }
@@ -247,10 +251,9 @@ const updateSchool = async (
       activeStudents: data.schoolData.activeStudents,
       activeTeachers: data.schoolData.activeTeachers,
       schoolLogo: data.schoolData.schoolLogo,
-      schoolDocuments : data.schoolDocuments
+      schoolDocuments: data.schoolDocuments,
     },
   });
-
 
   // 4. Delete grades
   if (data.DeleteGrades && data.DeleteGrades.length > 0) {
@@ -331,8 +334,7 @@ const getAllSchoolsForForms = async () => {
   });
 };
 
-
-const uploadSchoolDocuments = async (files : Express.Multer.File[]) => {
+const uploadSchoolDocuments = async (files: Express.Multer.File[]) => {
   const res = await Promise.all(
     files.map(async (file) => {
       const uploadResult = await uploadToDigitalOceanAWS(file);
@@ -340,10 +342,114 @@ const uploadSchoolDocuments = async (files : Express.Multer.File[]) => {
         fileName: file.originalname,
         url: uploadResult.Location,
       };
-    })
+    }),
   );
   return res;
 };
+
+const assignBooksToSchool = async (payload: {
+  schoolId: string;
+  bookIds: string[];
+  gradeIds?: string[];
+}) => {
+  const { schoolId, bookIds, gradeIds } = payload;
+
+  const school = await prisma.school.findUnique({
+    where: { id: schoolId },
+    include: { grades: true },
+  });
+  if (!school) {
+    throw new ApiError(httpStatus.NOT_FOUND, "School not found");
+  }
+  
+  let targetGradeIds: string[] = [];
+  if (gradeIds && gradeIds.length > 0) {
+    // Validate that the specified grade IDs belong to this school
+    const schoolGradeIds = school.grades.map((g) => g.id);
+    const invalidGrades = gradeIds.filter((id) => !schoolGradeIds.includes(id));
+    if (invalidGrades.length > 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Invalid grade IDs for this school: ${invalidGrades.join(", ")}`,
+      );
+    }
+    targetGradeIds = gradeIds;
+  } else {
+    // Default to assigning to all grades registered to the school
+    targetGradeIds = school.grades.map((g) => g.id);
+    if (targetGradeIds.length === 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "School has no grades registered. Cannot assign books.",
+      );
+    }
+  }
+
+  // 3. Verify that all specified book IDs actually exist
+  const existingBooks = await prisma.books.findMany({
+    where: { id: { in: bookIds } },
+    select: { id: true },
+  });
+  const validBookIds = existingBooks.map((b) => b.id);
+  const invalidBooks = bookIds.filter((id) => !validBookIds.includes(id));
+  if (invalidBooks.length > 0) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `Invalid book IDs: ${invalidBooks.join(", ")}`,
+    );
+  }
+
+  // 4. Construct combination mappings
+  const assignmentData: { bookId: string; gradeId: string }[] = [];
+  for (const bookId of validBookIds) {
+    for (const gradeId of targetGradeIds) {
+      assignmentData.push({ bookId, gradeId });
+    }
+  }
+
+  // 5. Execute transaction (avoids unique constraint errors by removing duplicates first)
+  return await prisma.$transaction(async (tx) => {
+    // Delete duplicate matches to prevent unique constraint failures
+    await tx.gradeBooks.deleteMany({
+      where: {
+        bookId: { in: validBookIds },
+        gradeId: { in: targetGradeIds },
+      },
+    });
+
+    // Bulk assign
+    const createdCount = await tx.gradeBooks.createMany({
+      data: assignmentData,
+    });
+
+    return createdCount;
+  });
+};
+
+const getNotAssignedBooksForSchool = async (schoolId: string) => {
+  const school = await prisma.school.findUnique({
+    where: { id: schoolId },
+    include: { grades: true },
+  });
+  if (!school) {
+    throw new ApiError(httpStatus.NOT_FOUND, "School not found");
+  }
+  // Implementation for fetching not assigned books would go here
+
+  const assignedBookIds = await prisma.gradeBooks.findMany({
+    where: { gradeId: { in: school.grades.map((g) => g.id) } },
+    select: { bookId: true },
+  }).then((res) => res.map((b) => b.bookId));
+
+  const notAssignedBooks = await prisma.books.findMany({
+    where: { id: { notIn: assignedBookIds } },
+    select : {
+      id:true,
+      bookName:true
+    }
+  });
+  return notAssignedBooks;
+}
 
 export const schoolServices = {
   createSchool,
@@ -353,5 +459,7 @@ export const schoolServices = {
   deleteSchool,
   getDownloadSchoolData,
   getAllSchoolsForForms,
-  uploadSchoolDocuments
+  uploadSchoolDocuments,
+  assignBooksToSchool,
+  getNotAssignedBooksForSchool,
 };
