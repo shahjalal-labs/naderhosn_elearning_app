@@ -24,12 +24,12 @@ const adminLogin = catchAsync(async (req, res) => {
 
 const sendForgotPasswordOtp = catchAsync(async (req, res) => {
   const email = req.body.email as string;
-  const response = await authService.sendForgotPasswordOtpDB(email);
+ await authService.sendForgotPasswordOtpDB(email);
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "OTP send successfully",
-    data: response,
+    
   });
 });
 
