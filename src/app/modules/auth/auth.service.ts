@@ -8,6 +8,7 @@ import generateOTP from "../../../helpers/generateOtp";
 import { uploadInSpace } from "../../../shared/UploadHelper";
 import { emailQueue } from "../../../queue/email.queue";
 import httpStatus from "http-status";
+import sendEmail from "../../../helpers/sendEmail";
 
 const loginUserIntoDB = async (payload: {
   userName: string;
@@ -175,6 +176,8 @@ const sendForgotPasswordOtpDB = async (payload: string) => {
       expiresAt: new Date(expiresAt),
     },
   });
+  
+    await sendEmail(existringUser.email, subject, html);
 
   return otp;
 };
