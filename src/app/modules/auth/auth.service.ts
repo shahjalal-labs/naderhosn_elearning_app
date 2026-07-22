@@ -6,7 +6,6 @@ import config from "../../../config";
 import { User } from "@prisma/client";
 import generateOTP from "../../../helpers/generateOtp";
 import { uploadInSpace } from "../../../shared/UploadHelper";
-import { emailQueue } from "../../../queue/email.queue";
 import httpStatus from "http-status";
 import sendEmail from "../../../helpers/sendEmail";
 
@@ -160,11 +159,7 @@ const sendForgotPasswordOtpDB = async (payload: string) => {
     <p>Thanks, <br>The Support Team</p>
   </div>
 `;
-  await emailQueue.add("forgotPasswordOtp", {
-    email: existringUser.email,
-    fullName: existringUser?.fullName,
-    otp,
-  });
+
   await prisma.otp.upsert({
     where: {
       email: existringUser.email,
