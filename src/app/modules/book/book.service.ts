@@ -234,7 +234,7 @@ const getAllBooksForTeacher = async (query: any, user: JwtPayload) => {
     skip,
     take: limit,
   });
-  console.log(books)
+
 
   return {
     meta: {

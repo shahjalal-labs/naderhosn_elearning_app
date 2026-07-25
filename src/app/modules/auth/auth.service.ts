@@ -18,6 +18,13 @@ const loginUserIntoDB = async (payload: {
     where: {
       loginUserName: payload.userName,
     },
+    include: {
+      Teacher: {
+        select: {
+          gradeId:true
+        }
+      }
+    }
   });
 
   if (!user) {
@@ -60,6 +67,7 @@ const loginUserIntoDB = async (payload: {
     accessToken,
     id: user.id,
     role: user.role,
+    gradeId: user?.Teacher[0]?.gradeId || null
   };
 };
 
@@ -257,6 +265,13 @@ const resetForgotPasswordDB = async (newPassword: string, userId: string) => {
 const getProfileFromDB = async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
+     include: {
+      Teacher: {
+        select: {
+          gradeId:true
+        }
+      }
+    }
   });
   if (!user) {
     throw new ApiError(404, "user not found!");
@@ -264,7 +279,10 @@ const getProfileFromDB = async (userId: string) => {
 
   const { password, joinedAt, updatedAt, ...sanitizedUser } = user;
 
-  return sanitizedUser;
+  return {
+    ...sanitizedUser,
+    gradeId: user?.Teacher[0]?.gradeId || null
+  };
 };
 
 const updateProfileIntoDB = async (
@@ -289,7 +307,7 @@ const updateProfileIntoDB = async (
   if (file) {
     profileImage = await uploadInSpace(file, "users/profileImage");
   }
-
+ 
   await prisma.user.update({
     where: { id: userId },
     data: {

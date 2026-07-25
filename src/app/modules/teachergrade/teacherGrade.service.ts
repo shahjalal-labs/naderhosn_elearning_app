@@ -60,6 +60,7 @@ const getGradesByIdForTeacher = async (
   query: { queryField: GradeQueryFilterTypeForTeacher; searchTerm: string },
   user: JwtPayload
 ) => {
+
   const bookCategoryIds = await prisma.teachersBookCategories.findMany({
     where: { teacherId: user.id },
     select: { categoryId: true },
@@ -70,6 +71,7 @@ const getGradesByIdForTeacher = async (
       gradeId: id,
     },
   });
+
   if (!isAccessible) {
     throw new ApiError(
       httpStatus.FORBIDDEN,
