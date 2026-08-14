@@ -9,6 +9,7 @@ import path from "path";
 import { bullBoardRouter } from "./bullBoard";
 import basicAuth from "express-basic-auth"
 import { deleteData,  privacyPolicy,  userDelete } from "./helpers/userDelete";
+import { privacyPolicyDarElChimal } from "./app/routes/viewRoute";
 
 const app: Application = express();
 const prisma = new PrismaClient();
@@ -54,7 +55,7 @@ app.get("/delete-data", (req, res) => {
   res.send(deleteData());
 });
 app.get("/privacy-policy", (req, res) => {
-  res.send(privacyPolicy());
+  res.send(privacyPolicyDarElChimal());
 });
 
 app.use("/api/v1", router);
