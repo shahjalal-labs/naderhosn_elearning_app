@@ -41,7 +41,6 @@ import {
 
 export const getStudents = async (query: usersQuery) => {
   const {
-    schoolName,
     searchTerm,
     startDate,
     endDate,
@@ -101,22 +100,21 @@ export const getStudents = async (query: usersQuery) => {
           mode: "insensitive",
         },
       },
-    ];
-  }
-
-  if (schoolName) {
-    where.StudentGrades = {
-      some: {
-        grade: {
-          school: {
-            name: {
-              contains: schoolName,
-              mode: "insensitive",
+      {
+        StudentGrades: {
+          some: {
+            grade: {
+              school: {
+                name: {
+                  contains: searchTerm,
+                  mode: "insensitive",
+                },
+              },
             },
           },
         },
       },
-    };
+    ];
   }
 
   if (startDate && endDate) {
@@ -162,7 +160,6 @@ export const getStudents = async (query: usersQuery) => {
 
 export const getTeachers = async (query: usersQuery) => {
   const {
-    schoolName,
     searchTerm,
     startDate,
     endDate,
@@ -222,22 +219,21 @@ export const getTeachers = async (query: usersQuery) => {
           mode: "insensitive",
         },
       },
-    ];
-  }
-
-  if (schoolName) {
-    where.Teacher = {
-      some: {
-        grade: {
-          school: { 
-            name: {
-              contains: schoolName,
-              mode: "insensitive",
+      {
+        Teacher: {
+          some: {
+            grade: {
+              school: {
+                name: {
+                  contains: searchTerm,
+                  mode: "insensitive",
+                },
+              },
             },
           },
         },
       },
-    };
+    ];
   }
 
   if (startDate && endDate) {
