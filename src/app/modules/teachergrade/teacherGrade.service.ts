@@ -10,20 +10,35 @@ const prisma = new PrismaClient();
 
 // ------------------------ Teacher Flow in grade ------------------ //
 const teacherOverview = async (user: JwtPayload, serchTerm: string) => {
-  const bookCategoryIds = await prisma.teachersBookCategories.findMany({
-    where: { teacherId: user.id },
-    select: { categoryId: true },
-  });
+  const [bookCategoryIds, teacherGradeIds] = await Promise.all([
+    prisma.teachersBookCategories.findMany({
+      where: { teacherId: user.id },
+      select: { categoryId: true },
+    }),
+    prisma.teacherGrades.findMany({
+      where: { teacherId: user.id },
+      select: { gradeId: true },
+    }),
+  ]);
+
+  const categoryIds = bookCategoryIds.map((b) => b.categoryId);
+  const authorizedGradeIds = teacherGradeIds.map((g) => g.gradeId);
+
   const [assignedClassesAgg, totalBooksAgg, totalStudentsAgg] =
     await prisma.$transaction([
       // total assigned classes
       prisma.grades.count({
         where: { TeacherGrades: { some: { teacherId: user.id } } },
       }),
-      // total books for all teacher grades
+      // total books only for the teacher's authorized grades and categories
       prisma.books.count({
         where: {
-          categoryId: { in: bookCategoryIds.map((b) => b.categoryId) },
+          categoryId: { in: categoryIds },
+          GradeBooks: {
+            some: {
+              gradeId: { in: authorizedGradeIds },
+            },
+          },
         },
       }),
       // total students for all teacher grades
@@ -36,11 +51,26 @@ const teacherOverview = async (user: JwtPayload, serchTerm: string) => {
     where: {
       TeacherGrades: { some: { teacherId: user.id } },
       ...(serchTerm && {
-        OR: [{ grade: { contains: serchTerm } }],
+        OR: [{ grade: { contains: serchTerm, mode: "insensitive" } }],
       }),
     },
-    include: { _count: { select: { GradeBooks: true, StudentGrades: true } } },
+    include: { _count: { select: { StudentGrades: true } } },
   });
+
+  const gradeBookCounts = await prisma.gradeBooks.groupBy({
+    by: ["gradeId"],
+    where: {
+      gradeId: { in: authorizedGradeIds },
+      book: {
+        categoryId: { in: categoryIds },
+      },
+    },
+    _count: { gradeId: true },
+  });
+
+  const totalBooksByGrade = Object.fromEntries(
+    gradeBookCounts.map((item) => [item.gradeId, item._count.gradeId]),
+  );
 
   return {
     assignedGrades: assignedClassesAgg,
@@ -49,7 +79,7 @@ const teacherOverview = async (user: JwtPayload, serchTerm: string) => {
     grades: grades.map((g) => ({
       id: g.id,
       grade: g.grade,
-      totalBooks: g._count.GradeBooks,
+      totalBooks: totalBooksByGrade[g.id] ?? 0,
       totalStudents: g._count.StudentGrades,
     })),
   };
@@ -58,9 +88,8 @@ const teacherOverview = async (user: JwtPayload, serchTerm: string) => {
 const getGradesByIdForTeacher = async (
   id: string,
   query: { queryField: GradeQueryFilterTypeForTeacher; searchTerm: string },
-  user: JwtPayload
+  user: JwtPayload,
 ) => {
-
   const bookCategoryIds = await prisma.teachersBookCategories.findMany({
     where: { teacherId: user.id },
     select: { categoryId: true },
@@ -75,7 +104,7 @@ const getGradesByIdForTeacher = async (
   if (!isAccessible) {
     throw new ApiError(
       httpStatus.FORBIDDEN,
-      "You do not have access to this grade"
+      "You do not have access to this grade",
     );
   }
   // Check grade exists

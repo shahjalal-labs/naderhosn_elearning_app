@@ -11,7 +11,7 @@ import { JwtPayload } from "jsonwebtoken";
 // ---------------------- Book category Services ------------------ //
 const createBookCategory = async (
   data: BookCategory,
-  file?: Express.Multer.File
+  file?: Express.Multer.File,
 ) => {
   const isExist = await prisma.bookCategory.findFirst({
     where: { name: data.name },
@@ -55,7 +55,7 @@ const getBookCategoryById = async (id: string) => {
 const updateBookCategory = async (
   id: string,
   data: any,
-  file?: Express.Multer.File
+  file?: Express.Multer.File,
 ) => {
   const isExist = await prisma.bookCategory.findUnique({ where: { id } });
   if (!isExist) {
@@ -89,7 +89,7 @@ const createBook = async (
   bodyData: bookData,
   bookPdf: Express.Multer.File,
   user: JwtPayload,
-  coverImage?: Express.Multer.File
+  coverImage?: Express.Multer.File,
 ) => {
   const { BookData, Resources, Grades } = bodyData;
 
@@ -120,7 +120,7 @@ const createBook = async (
       author: BookData.author,
       description: BookData.description ?? "",
       ISBN: BookData.ISBN ?? "",
-      RTL : BookData.RTL ?? false,
+      RTL: BookData.RTL ?? false,
       coverImg,
       file,
       categoryId: BookData.categoryId,
@@ -158,7 +158,7 @@ const createBook = async (
     if (invalid.length > 0) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `Invalid grade IDs: ${invalid.join(", ")}`
+        `Invalid grade IDs: ${invalid.join(", ")}`,
       );
     }
 
@@ -175,19 +175,19 @@ const createBook = async (
 
 const getAllBooks = async (query: any) => {
   const keys = await getModelKeys("books");
-  
+
   // Extract bookCategoryId and map it to categoryId
   const { bookCategoryId, categoryId, ...restQuery } = query;
   const finalCategoryId = categoryId || bookCategoryId;
-  
+
   // Build the cleaned query object
   const cleanedQuery = {
     ...restQuery,
-    ...(finalCategoryId && { categoryId: finalCategoryId })
+    ...(finalCategoryId && { categoryId: finalCategoryId }),
   };
-  
+
   const booksQuery = new QueryBuilder(prisma.books, cleanedQuery, keys);
-  
+
   const result = await booksQuery
     .search(["bookName"])
     .filter()
@@ -208,39 +208,60 @@ const getAllBooks = async (query: any) => {
 };
 
 const getAllBooksForTeacher = async (query: any, user: JwtPayload) => {
-  // Get all grades for this teacher
-
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  const bookCategoryIds = await prisma.teachersBookCategories.findMany({
-    where: { teacherId: user.id },
-    select: { categoryId: true },
-  });
+  const [bookCategoryIds, teacherGradeIds] = await Promise.all([
+    prisma.teachersBookCategories.findMany({
+      where: { teacherId: user.id },
+      select: { categoryId: true },
+    }),
+    prisma.teacherGrades.findMany({
+      where: { teacherId: user.id },
+      select: { gradeId: true },
+    }),
+  ]);
+
   const categoryIds = bookCategoryIds.map((b) => b.categoryId);
+  const authorizedGradeIds = teacherGradeIds.map((g) => g.gradeId);
+
+  if (!categoryIds.length || !authorizedGradeIds.length) {
+    return {
+      meta: { page, limit, total: 0 },
+      data: [],
+    };
+  }
 
   const searchFilter = query.searchTerm;
 
   const whereClause: any = {
     categoryId: { in: categoryIds },
+    GradeBooks: {
+      some: {
+        gradeId: { in: authorizedGradeIds },
+      },
+    },
     ...(searchFilter && {
       bookName: { contains: searchFilter, mode: "insensitive" },
     }),
   };
-  const books = await prisma.books.findMany({
-    where: whereClause,
-    include: { category: true, Resources: true },
-    skip,
-    take: limit,
-  });
 
+  const [books, total] = await Promise.all([
+    prisma.books.findMany({
+      where: whereClause,
+      include: { category: true, Resources: true },
+      skip,
+      take: limit,
+    }),
+    prisma.books.count({ where: whereClause }),
+  ]);
 
   return {
     meta: {
       page,
       limit,
-      total: books.length,
+      total,
     },
     data: books,
   };
@@ -339,7 +360,7 @@ const getBookById = async (id: string) => {
       schoolName: gradesinthisSchool[0]?.school?.name || "",
       schoolLogo: gradesinthisSchool[0]?.school?.schoolLogo || "",
       gradesinthisSchool,
-    })
+    }),
   );
 
   return {
@@ -366,7 +387,7 @@ const updateBook = async (
     deletedGrades?: string[];
   },
   coverImage?: Express.Multer.File,
-  BookFile?: Express.Multer.File
+  BookFile?: Express.Multer.File,
 ) => {
   const { BookData, NewGradesAssign, deletedGrades } = bodyData;
 
@@ -404,7 +425,7 @@ const updateBook = async (
     if (invalid.length > 0) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `Invalid grade IDs: ${invalid.join(", ")}`
+        `Invalid grade IDs: ${invalid.join(", ")}`,
       );
     }
 
