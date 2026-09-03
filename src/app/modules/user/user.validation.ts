@@ -54,7 +54,7 @@ export const StudentBulkUploadValidation = z.object({
   gradeId: z.string(),
   numberOfStudent: z
     .number()
-    .max(20, { message: "you can create maximum 20 at a time!" }),
+    .max(100, { message: "you can create maximum 100 at a time!" }),
 });
 
 export const TeacherBulkUploadValidation = z.object({
@@ -65,7 +65,7 @@ export const TeacherBulkUploadValidation = z.object({
     .optional(),
   numberOfTeacher: z
     .number()
-    .max(20, { message: "you can create maximum 20 at a time!" }),
+    .max(100, { message: "you can create maximum 100 at a time!" }),
 });
 
 export const UserUpdateValidations = z.object({
