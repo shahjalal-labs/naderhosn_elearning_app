@@ -133,6 +133,11 @@ const getGradesByIdForTeacher = async (
     prisma.books.count({
       where: {
         categoryId: { in: bookCategoryIds.map((b) => b.categoryId) },
+        GradeBooks: {
+          some: {
+            gradeId: id,
+          },
+        },
       },
     }),
 
@@ -205,6 +210,11 @@ const getGradesByIdForTeacher = async (
       extraData = await prisma.books.findMany({
         where: {
           categoryId: { in: bookCategoryIds.map((b) => b.categoryId) },
+          GradeBooks: {
+            some: {
+              gradeId: id,
+            },
+          },
           bookName: { contains: query.searchTerm, mode: "insensitive" },
         },
       });
