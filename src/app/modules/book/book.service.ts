@@ -233,13 +233,24 @@ const getAllBooksForTeacher = async (query: any, user: JwtPayload) => {
     };
   }
 
+  let targetGradeIds = authorizedGradeIds;
+  if (query.gradeId && query.gradeId !== "all") {
+    if (!authorizedGradeIds.includes(query.gradeId)) {
+      return {
+        meta: { page, limit, total: 0 },
+        data: [],
+      };
+    }
+    targetGradeIds = [query.gradeId];
+  }
+
   const searchFilter = query.searchTerm;
 
   const whereClause: any = {
     categoryId: { in: categoryIds },
     GradeBooks: {
       some: {
-        gradeId: { in: authorizedGradeIds },
+        gradeId: { in: targetGradeIds },
       },
     },
     ...(searchFilter && {
