@@ -3,6 +3,7 @@ import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAW
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import prisma from "../../../shared/prisma";
+import { normalizeGrade, gradesMatch } from "../../../helpers/gradeMatcher";
 
 type CreateGradeInput = {
   gradeLevel: string;
@@ -361,34 +362,18 @@ const assignBooksToSchool = async (payload: {
   if (!school) {
     throw new ApiError(httpStatus.NOT_FOUND, "School not found");
   }
-  
-  let targetGradeIds: string[] = [];
-  if (gradeIds && gradeIds.length > 0) {
-    // Validate that the specified grade IDs belong to this school
-    const schoolGradeIds = school.grades.map((g) => g.id);
-    const invalidGrades = gradeIds.filter((id) => !schoolGradeIds.includes(id));
-    if (invalidGrades.length > 0) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        `Invalid grade IDs for this school: ${invalidGrades.join(", ")}`,
-      );
-    }
-    targetGradeIds = gradeIds;
-  } else {
-    // Default to assigning to all grades registered to the school
-    targetGradeIds = school.grades.map((g) => g.id);
-    if (targetGradeIds.length === 0) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "School has no grades registered. Cannot assign books.",
-      );
-    }
+
+  if (school.grades.length === 0) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "School has no grades registered. Cannot assign books.",
+    );
   }
 
-  // 3. Verify that all specified book IDs actually exist
+  // 1. Verify specified books exist
   const existingBooks = await prisma.books.findMany({
     where: { id: { in: bookIds } },
-    select: { id: true },
+    select: { id: true, bookName: true },
   });
   const validBookIds = existingBooks.map((b) => b.id);
   const invalidBooks = bookIds.filter((id) => !validBookIds.includes(id));
@@ -399,25 +384,50 @@ const assignBooksToSchool = async (payload: {
     );
   }
 
-  // 4. Construct combination mappings
+  // 2. Construct combination mappings
   const assignmentData: { bookId: string; gradeId: string }[] = [];
-  for (const bookId of validBookIds) {
-    for (const gradeId of targetGradeIds) {
-      assignmentData.push({ bookId, gradeId });
+
+  if (gradeIds && gradeIds.length > 0) {
+    // Validate specified grade IDs belong to this school
+    const schoolGradeIds = school.grades.map((g) => g.id);
+    const invalidGrades = gradeIds.filter((id) => !schoolGradeIds.includes(id));
+    if (invalidGrades.length > 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Invalid grade IDs for this school: ${invalidGrades.join(", ")}`,
+      );
+    }
+    for (const book of existingBooks) {
+      for (const gradeId of gradeIds) {
+        assignmentData.push({ bookId: book.id, gradeId });
+      }
+    }
+  } else {
+    // Intelligently auto-match each book to the school's corresponding grades by grade level
+    for (const book of existingBooks) {
+      const bookLevels = normalizeGrade(book.bookName || "");
+      const matchedGrades = school.grades.filter((g) =>
+        gradesMatch(bookLevels, normalizeGrade(g.grade)),
+      );
+
+      const targetGrades = matchedGrades.length > 0 ? matchedGrades : school.grades;
+      for (const grade of targetGrades) {
+        assignmentData.push({ bookId: book.id, gradeId: grade.id });
+      }
     }
   }
 
-  // 5. Execute transaction (avoids unique constraint errors by removing duplicates first)
+  // 3. Execute transaction (remove existing assignments for these books in this school to prevent duplicates)
+  const targetGradeIdsToClear = Array.from(new Set(assignmentData.map((a) => a.gradeId)));
+
   return await prisma.$transaction(async (tx) => {
-    // Delete duplicate matches to prevent unique constraint failures
     await tx.gradeBooks.deleteMany({
       where: {
         bookId: { in: validBookIds },
-        gradeId: { in: targetGradeIds },
+        gradeId: { in: targetGradeIdsToClear },
       },
     });
 
-    // Bulk assign
     const createdCount = await tx.gradeBooks.createMany({
       data: assignmentData,
     });

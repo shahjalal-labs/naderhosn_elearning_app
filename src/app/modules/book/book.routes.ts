@@ -66,9 +66,19 @@ router.get(
   "/test-pdf-reader/:pdfUrl",
   (req: Request, res: Response) => {
     try {
-      const pdfUrl = decodeURIComponent(req.params.pdfUrl);
+      let pdfUrl = decodeURIComponent(req.params.pdfUrl);
+      try {
+        const parsed = new URL(pdfUrl);
+        if (parsed.hostname === "fra1.digitaloceanspaces.com" && parsed.pathname.startsWith("/dac/")) {
+          pdfUrl = `https://dac.fra1.cdn.digitaloceanspaces.com${parsed.pathname.replace(/^\/dac\//, "/")}${parsed.search}`;
+        } else if (parsed.hostname === "dac.fra1.digitaloceanspaces.com") {
+          pdfUrl = `https://dac.fra1.cdn.digitaloceanspaces.com${parsed.pathname}${parsed.search}`;
+        }
+      } catch (e) {
+        // use pdfUrl as-is
+      }
+
       const range = req.headers.range;
-      
       const parsedUrl = new URL(pdfUrl);
       const protocol = parsedUrl.protocol === 'https:' ? https : http;
 
@@ -94,7 +104,7 @@ router.get(
         // PDF-specific headers
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Accept-Ranges', 'bytes');
-        res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
         
         // Forward content headers from source
         if (proxyResponse.headers['content-length']) {
@@ -122,8 +132,8 @@ router.get(
         }
       });
 
-      // Set timeout for large files (30 seconds)
-      proxyRequest.setTimeout(30000);
+      // 5-minute timeout for large files
+      proxyRequest.setTimeout(300000);
       proxyRequest.end();
     } catch (err) {
       console.error(err);

@@ -1,0 +1,21 @@
+### Get All Books for Teacher (All Assigned Grades)
+
+# Mohammed Mowafaq / Mohammed Aldawod (DAC-BK202029)
+
+GET {{baseUrl}}/book/for-teacher?page=1
+  &limit=10 HTTP/1.1
+# Authorization: {{gauzman}}
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMjdlNGU1Mzc0ZDQ3NDI5ZGJjOWMwNyIsImVtYWlsIjoiaW5mb0BhbG1vYXR0YXNlbXNjaG9vbC5jb20iLCJyb2xlIjoiVGVhY2hlciIsImZ1bGxOYW1lIjoiTXJzIFNhamVlcmEgQW5qdSIsImlhdCI6MTc4OTQ0NTcyMCwiZXhwIjoxNzkwNzQxNzIwfQ.a6ofs2uXEpB9pgXPP8AwePBdAO3h2B9ui62zjTDIDN4
+
+### Get Books for Teacher Filtered by Specific Grade (e.g. Grade 3)
+
+GET {{baseUrl}}/book/for-teacher?page=1
+  &limit=10
+  &gradeId=6a9d3305493a0aedaed33cf5 HTTP/1.1
+# Authorization: {{gauzman}}
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMjdlNGU1Mzc0ZDQ3NDI5ZGJjOWMwNyIsImVtYWlsIjoiaW5mb0BhbG1vYXR0YXNlbXNjaG9vbC5jb20iLCJyb2xlIjoiVGVhY2hlciIsImZ1bGxOYW1lIjoiTXJzIFNhamVlcmEgQW5qdSIsImlhdCI6MTc4OTQ0NTcyMCwiZXhwIjoxNzkwNzQxNzIwfQ.a6ofs2uXEpB9pgXPP8AwePBdAO3h2B9ui62zjTDIDN4
+
+### Get Single Book by ID
+
+GET {{baseUrl}}/book/69eb2bb10a114f0646f2a0fd HTTP/1.1
+Authorization: {{mowafaq}}

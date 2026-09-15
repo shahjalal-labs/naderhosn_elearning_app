@@ -1,0 +1,95 @@
+### User Login (Teacher / Student)
+
+# Mohammed Mowafaq / Mohammed Aldawod (DAC-BK202029)
+
+POST {{baseUrl}}/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "userName": "DAC-Sajeera",
+  "password": "DAC-1",
+  "fcmToken": "sample_fcm_token"
+}
+
+### Admin Login
+
+POST {{baseUrl}}/auth/admin-login HTTP/1.1
+Content-Type: application/json
+
+{
+  "userName": "Admin",
+  "password": "password123",
+  "fcmToken": "sample_fcm_token"
+}
+
+### Get Current User Profile
+
+GET {{baseUrl}}/auth/profile HTTP/1.1
+# Authorization: {{mowafaq}}
+# Authorization: {{gauzman}}
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMjdlNGU1Mzc0ZDQ3NDI5ZGJjOWMwNyIsImVtYWlsIjoiaW5mb0BhbG1vYXR0YXNlbXNjaG9vbC5jb20iLCJyb2xlIjoiVGVhY2hlciIsImZ1bGxOYW1lIjoiTXJzIFNhamVlcmEgQW5qdSIsImlhdCI6MTc4OTQ0NTcyMCwiZXhwIjoxNzkwNzQxNzIwfQ.a6ofs2uXEpB9pgXPP8AwePBdAO3h2B9ui62zjTDIDN4
+
+### Update User Profile (Multipart Form Data with bodyData & optional profileImage)
+
+PUT {{baseUrl}}/auth/set-profile HTTP/1.1
+Authorization: {{mowafaq}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="bodyData"
+Content-Type: application/json
+
+{
+  "fullName": "Mohammed Mowafaq / Mohammed Aldawod",
+  "phone": "+96170123456",
+  "gender": "Male"
+}
+--WebAppBoundary
+Content-Disposition: form-data; name="profileImage"; filename="avatar.jpg"
+Content-Type: image/jpeg
+
+< ./avatar.jpg
+--WebAppBoundary--
+
+### Change Password
+
+PATCH {{baseUrl}}/auth/change-password HTTP/1.1
+Authorization: {{mowafaq}}
+Content-Type: application/json
+
+{
+  "oldPassword": "oldPassword123",
+  "newPassword": "newPassword123"
+}
+
+### Send Forgot Password OTP
+
+POST {{baseUrl}}/auth/send-otp HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "admin@gmail.com"
+}
+
+### Verify Forgot Password OTP
+
+POST {{baseUrl}}/auth/verify-otp HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "admin@gmail.com",
+  "otp": "1234"
+}
+
+### Reset Password (After OTP Verification)
+
+@forgetToken = YOUR_FORGET_TOKEN_HERE
+# Note: Use the 'forgetToken' returned from verify-otp as the Authorization header value
+
+PATCH {{baseUrl}}/auth/reset-password HTTP/1.1
+Authorization: {{forgetToken}}
+Content-Type: application/json
+
+{
+  "newPassword": "newPassword123"
+}
