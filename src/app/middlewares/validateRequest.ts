@@ -9,13 +9,24 @@ const validateRequest =
       return next();
     } catch (err) {
       if (err instanceof ZodError) {
+        const errorDetails = err.errors.map((error) => {
+          const field = error.path.join(".");
+          let msg = error.message;
+          if (msg.toLowerCase() === "required" && field) {
+            msg = `${field} is required`;
+          }
+          return {
+            path: field,
+            message: msg,
+          };
+        });
+
+        const detailedMessage = errorDetails.map((e) => e.message).join(". ");
+
         return res.status(400).json({
           success: false,
-          message: "Validation failed",
-          errors: err.errors.map((error) => ({
-            path: error.path.join("."),
-            message: error.message,
-          })),
+          message: detailedMessage || "Validation failed",
+          errors: errorDetails,
         });
       }
       return next(err);

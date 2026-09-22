@@ -24,6 +24,25 @@ const handleClientError = (error: Prisma.PrismaClientKnownRequestError) => {
         },
       ];
     }
+  } else if (error.code === "P2023") {
+    message = (error.meta?.message as string) || "Invalid ID format provided";
+    errors = [
+      {
+        path: "",
+        message,
+      },
+    ];
+  } else {
+    message =
+      (error.meta?.message as string) ||
+      (error.meta?.cause as string) ||
+      "Database request failed";
+    errors = [
+      {
+        path: "",
+        message,
+      },
+    ];
   }
 
   return {
