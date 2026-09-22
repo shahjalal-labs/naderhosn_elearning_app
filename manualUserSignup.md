@@ -4,16 +4,45 @@ This document provides complete instructions for the frontend team to integrate 
 
 ---
 
-## 📌 Overview & Architecture
+## 📌 Standard API Response Pattern
+
+All successful responses in this backend strictly follow this consistent format:
+```json
+{
+  "success": true,
+  "message": "Human readable success message",
+  "meta": null,
+  "result": {
+    /* response payload here */
+  }
+}
+```
+And error responses follow:
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "errorMessages": [
+    {
+      "path": "fieldName",
+      "message": "Detailed error reason"
+    }
+  ]
+}
+```
+
+---
+
+## 📌 Architecture & Design Highlights
 
 * **Target Users:** Both **Students** and **Teachers** can sign up.
-* **Storage & Safety:** Registrations are held in a temporary `pending_users` collection until the 4-digit OTP is verified. Once verified, they are permanently created in the `users` table with `isManualSignup: true`.
-* **Password:** Passwords are kept unhashed (plain-text) to match the existing system architecture.
-* **Auto-generated Username:** The frontend does **not** provide a username. The backend automatically generates a guaranteed unique `loginUserName`:
+* **Temporary Staging:** Registrations are saved in a temporary `pending_users` table until the 4-digit OTP is verified. Once verified, the account is moved to `users` with `isManualSignup: true`.
+* **Password:** Passwords remain plain-text (unhashed) to align with existing system authentication.
+* **Auto-generated Username:** The frontend does **not** generate or provide a username. The backend automatically creates a unique `loginUserName`:
   * **Students:** `s` + 5 random digits (e.g., `s48291`)
   * **Teachers:** `teach` + 5 random digits (e.g., `teach59102`)
-  * This username is returned in the verification response and can be displayed on a "Welcome" or "Registration Successful" screen.
-* **Login Flexibility:** Users can log in using **either** their auto-generated `userName` **or** their `email` with the existing login endpoint (`POST /api/v1/auth/login`).
+  * This is returned in `result.userName` upon successful OTP verification.
+* **Login Flexibility:** Users can log in with **either** their auto-generated `userName` **or** their `email` using the standard `POST /api/v1/auth/login`.
 
 ---
 
@@ -31,12 +60,12 @@ sequenceDiagram
     User->>UI: Fills Form (Name, Email, Password, Role, Image) & Clicks "Sign Up"
     UI->>API: POST /api/v1/auth/signup (multipart/form-data)
     API->>Mail: Sends 4-digit OTP (expires in 5 minutes)
-    API-->>UI: 200 OK ("OTP sent to your email")
+    API-->>UI: 200 OK (OTP sent successfully)
 
     UI->>User: Display OTP Verification Modal / Screen
     User->>UI: Enters 4-digit OTP
     UI->>API: POST /api/v1/auth/verify-signup-otp { email, otp }
-    API-->>UI: 200 OK (Returns auto-generated username & JWT accessToken)
+    API-->>UI: 200 OK (Returns auto-generated username & JWT accessToken in result)
 
     Note over UI, User: Option A: Auto-login immediately using the returned accessToken.<br/>Option B: Display success screen with assigned username, then redirect to login.
 ```
@@ -53,11 +82,11 @@ sequenceDiagram
 
 ### Step 1: Submit Registration Details & Send OTP
 
-Initiates the registration, uploads profile image to DigitalOcean Spaces, stores data in `pending_users`, and emails a 4-digit OTP.
+Initiates registration, uploads profile image to DigitalOcean Spaces, saves pending registration, and emails a 4-digit OTP.
 
 * **Method:** `POST`
 * **Endpoint:** `/auth/signup`
-* **Content-Type:** `multipart/form-data` (or `application/json` if no image file is being uploaded)
+* **Content-Type:** `multipart/form-data` (or `application/json` if no image file is uploaded)
 
 #### Request Fields:
 
@@ -65,14 +94,14 @@ Initiates the registration, uploads profile image to DigitalOcean Spaces, stores
 | :--- | :--- | :--- | :--- | :--- |
 | `email` | String | **Yes** | Valid email address | `"reviewer@apple.com"` |
 | `password` | String | **Yes** | User password | `"reviewPass123"` |
-| `role` | String | No | Role of user: `"Student"` or `"Teacher"` (Default: `"Student"`) | `"Student"` |
+| `role` | String | No | Role: `"Student"` or `"Teacher"` (Default: `"Student"`) | `"Student"` |
 | `fullName` | String | No | Full display name | `"John Doe"` |
 | `gender` | String | No | `"Male"` or `"Female"` | `"Male"` |
 | `phone` | String | No | Phone number | `"+96170123456"` |
 | `DOB` | String | No | Date of birth (ISO 8601 string) | `"2000-01-15"` |
 | `profileImage` | File (Binary) | No | Avatar/photo (JPEG, PNG, WEBP) | `avatar.png` |
 
-#### Request Example (JSON - when no file is uploaded):
+#### Request Example (JSON - without profile image):
 ```json
 {
   "fullName": "Jane Student",
@@ -85,7 +114,7 @@ Initiates the registration, uploads profile image to DigitalOcean Spaces, stores
 }
 ```
 
-#### Request Example (Multipart Form-Data - JavaScript / React Native / Web):
+#### Request Example (Multipart Form-Data - JavaScript / React):
 ```javascript
 const formData = new FormData();
 formData.append("fullName", "Jane Student");
@@ -97,22 +126,23 @@ formData.append("phone", "+96170112233");
 formData.append("DOB", "2005-06-20");
 
 if (imageFile) {
-  formData.append("profileImage", imageFile); // file object or { uri, name, type } on React Native
+  formData.append("profileImage", imageFile);
 }
 
 const response = await fetch("https://api.darelchimalapp.com/api/v1/auth/signup", {
   method: "POST",
   body: formData,
 });
+const data = await response.json();
 ```
 
 #### Success Response (`200 OK`):
 ```json
 {
-  "statusCode": 200,
   "success": true,
   "message": "OTP sent to your email. Please verify to complete registration.",
-  "data": {
+  "meta": null,
+  "result": {
     "email": "jane.student@example.com"
   }
 }
@@ -122,17 +152,27 @@ const response = await fetch("https://api.darelchimalapp.com/api/v1/auth/signup"
 * **`400 Bad Request`:**
   ```json
   {
-    "statusCode": 400,
     "success": false,
-    "message": "Email is required" // or "Password is required"
+    "message": "Email is required",
+    "errorMessages": [
+      {
+        "path": "",
+        "message": "Email is required"
+      }
+    ]
   }
   ```
-* **`409 Conflict`:**
+* **`409 Conflict` (Email Already Registered):**
   ```json
   {
-    "statusCode": 409,
     "success": false,
-    "message": "User with this email already exists"
+    "message": "User with this email already exists",
+    "errorMessages": [
+      {
+        "path": "",
+        "message": "User with this email already exists"
+      }
+    ]
   }
   ```
 
@@ -140,7 +180,7 @@ const response = await fetch("https://api.darelchimalapp.com/api/v1/auth/signup"
 
 ### Step 2: Verify OTP & Activate Account
 
-Validates the OTP code, auto-generates the username, moves user to permanent storage, and returns user credentials.
+Validates the OTP code, auto-generates the unique username, creates the permanent active account, deletes pending registration, and returns user credentials.
 
 * **Method:** `POST`
 * **Endpoint:** `/auth/verify-signup-otp`
@@ -157,10 +197,10 @@ Validates the OTP code, auto-generates the username, moves user to permanent sto
 #### Success Response (`200 OK`):
 ```json
 {
-  "statusCode": 200,
   "success": true,
   "message": "User verified and registered successfully.",
-  "data": {
+  "meta": null,
+  "result": {
     "userName": "s48291",
     "email": "jane.student@example.com",
     "fullName": "Jane Student",
@@ -171,32 +211,47 @@ Validates the OTP code, auto-generates the username, moves user to permanent sto
 ```
 
 > 💡 **Frontend Recommendation:**
-> 1. You can immediately store `data.accessToken` and log the user into the app without prompting them to log in again.
-> 2. Display `data.userName` (e.g. `s48291`) so the user knows their login username for future sessions.
+> 1. Store `result.accessToken` in your auth store to log the user in directly.
+> 2. Show `result.userName` (e.g. `s48291`) on the confirmation screen so the user knows their login username.
 
 #### Error Responses:
 * **`400 Bad Request`:**
   ```json
   {
-    "statusCode": 400,
     "success": false,
-    "message": "No pending registration found for this email."
+    "message": "No pending registration found for this email.",
+    "errorMessages": [
+      {
+        "path": "",
+        "message": "No pending registration found for this email."
+      }
+    ]
   }
   ```
-* **`401 Unauthorized`:**
+* **`401 Unauthorized` (Wrong OTP):**
   ```json
   {
-    "statusCode": 401,
     "success": false,
-    "message": "Invalid OTP."
+    "message": "Invalid OTP.",
+    "errorMessages": [
+      {
+        "path": "",
+        "message": "Invalid OTP."
+      }
+    ]
   }
   ```
 * **`410 Gone` (OTP Expired):**
   ```json
   {
-    "statusCode": 410,
     "success": false,
-    "message": "OTP has expired. Please sign up again."
+    "message": "OTP has expired. Please sign up again.",
+    "errorMessages": [
+      {
+        "path": "",
+        "message": "OTP has expired. Please sign up again."
+      }
+    ]
   }
   ```
 
@@ -204,13 +259,13 @@ Validates the OTP code, auto-generates the username, moves user to permanent sto
 
 ### Step 3: Subsequent User Login
 
-Manual signup users can log in via the standard login endpoint using **either** their auto-generated `userName` or their `email`.
+Users can log in using either their auto-generated `userName` or their `email`.
 
 * **Method:** `POST`
 * **Endpoint:** `/auth/login`
 * **Content-Type:** `application/json`
 
-#### Request Body (Option A - Using Auto-generated Username):
+#### Request Body (Option A - With Auto-generated Username):
 ```json
 {
   "userName": "s48291",
@@ -219,7 +274,7 @@ Manual signup users can log in via the standard login endpoint using **either** 
 }
 ```
 
-#### Request Body (Option B - Using Email directly):
+#### Request Body (Option B - With Email directly):
 ```json
 {
   "userName": "jane.student@example.com",
@@ -231,10 +286,10 @@ Manual signup users can log in via the standard login endpoint using **either** 
 #### Success Response (`200 OK`):
 ```json
 {
-  "statusCode": 200,
   "success": true,
   "message": "User successfully logged in",
-  "data": {
+  "meta": null,
+  "result": {
     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "id": "66f123456789abcdef012345",
     "role": "Student",
@@ -247,7 +302,7 @@ Manual signup users can log in via the standard login endpoint using **either** 
 
 ### Step 4: Admin Cleanup (Post Apple Review)
 
-When the Apple review is finished, all manual signups can be purged in one call.
+Wipes all manual/test signups once Apple approves the app.
 
 * **Method:** `DELETE`
 * **Endpoint:** `/user/manual-signups`
@@ -259,10 +314,10 @@ When the Apple review is finished, all manual signups can be purged in one call.
 #### Success Response (`200 OK`):
 ```json
 {
-  "statusCode": 200,
   "success": true,
   "message": "Manual test signups deleted successfully",
-  "data": {
+  "meta": null,
+  "result": {
     "count": 5
   }
 }
@@ -273,13 +328,13 @@ When the Apple review is finished, all manual signups can be purged in one call.
 ## 🎨 Recommended Frontend UX Checklist
 
 - [ ] **Signup Screen:**
-  - Add Role picker: "Student" (default) or "Teacher".
-  - Add standard inputs: Full Name, Email, Password, Confirm Password, Gender, Phone, DOB.
+  - Role switcher: "Student" (default) or "Teacher".
+  - Input fields: Full Name, Email, Password, Confirm Password, Gender, Phone, DOB.
   - Image picker for profile photo (optional).
-- [ ] **OTP Screen / Modal:**
-  - Auto-focus on 4-digit input fields.
-  - Display a 5-minute countdown timer.
-  - "Resend OTP" button (re-triggers `POST /auth/signup`).
-- [ ] **Post-Verification Confirmation:**
-  - Inform the user: *"Your account has been created! Your assigned login username is: **s48291** (You can also log in with your email)."*
-  - Automatically persist the received `accessToken` into Redux/AsyncStorage.
+- [ ] **OTP Verification Screen:**
+  - 4-digit numeric code input.
+  - 5-minute countdown timer.
+  - "Resend OTP" button (re-invokes `POST /auth/signup`).
+- [ ] **Post-Verification Screen:**
+  - Confirmation message: *"Your account has been created! Your assigned login username is: **s48291** (You can also log in with your email)."*
+  - Auto-login or redirect to dashboard with the returned `result.accessToken`.

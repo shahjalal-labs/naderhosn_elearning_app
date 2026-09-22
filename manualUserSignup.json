@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "8bfa2e1c-5d63-4819-a1b7-99432e19efaa",
     "name": "Manual User Signup (Apple Submission)",
-    "description": "Collection for manual Student and Teacher sign up flow built for Apple App Store Review compliance. Includes 2-step OTP registration, login with auto-generated username or email, and admin cleanup endpoint.",
+    "description": "Postman Collection for Manual Student and Teacher Signup flow built for Apple App Store Review compliance. Uses standard response pattern: { success, message, meta, result }.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -52,11 +52,11 @@
             "signup"
           ]
         },
-        "description": "Step 1: Initiates signup for a student. Generates a 4-digit OTP, holds info in temporary pending_users table, and emails OTP."
+        "description": "Step 1: Submits student details. Generates a 4-digit OTP, stores temporary record in pending_users, and emails OTP."
       },
       "response": [
         {
-          "name": "200 OK - OTP Sent",
+          "name": "200 OK - Success (OTP Sent)",
           "originalRequest": {
             "method": "POST",
             "header": [
@@ -95,7 +95,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"OTP sent to your email. Please verify to complete registration.\",\n  \"data\": {\n    \"email\": \"reviewer.student@apple.com\"\n  }\n}"
+          "body": "{\n  \"success\": true,\n  \"message\": \"OTP sent to your email. Please verify to complete registration.\",\n  \"meta\": null,\n  \"result\": {\n    \"email\": \"reviewer.student@apple.com\"\n  }\n}"
         },
         {
           "name": "409 Conflict - Email Already Exists",
@@ -137,7 +137,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"statusCode\": 409,\n  \"success\": false,\n  \"message\": \"User with this email already exists\"\n}"
+          "body": "{\n  \"success\": false,\n  \"message\": \"User with this email already exists\",\n  \"errorMessages\": [\n    {\n      \"path\": \"\",\n      \"message\": \"User with this email already exists\"\n    }\n  ]\n}"
         }
       ]
     },
@@ -205,7 +205,7 @@
       },
       "response": [
         {
-          "name": "200 OK - OTP Sent",
+          "name": "200 OK - Success (OTP Sent)",
           "originalRequest": {
             "method": "POST",
             "url": {
@@ -229,7 +229,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"OTP sent to your email. Please verify to complete registration.\",\n  \"data\": {\n    \"email\": \"sarah.teacher@apple.com\"\n  }\n}"
+          "body": "{\n  \"success\": true,\n  \"message\": \"OTP sent to your email. Please verify to complete registration.\",\n  \"meta\": null,\n  \"result\": {\n    \"email\": \"sarah.teacher@apple.com\"\n  }\n}"
         }
       ]
     },
@@ -262,11 +262,11 @@
             "verify-signup-otp"
           ]
         },
-        "description": "Step 2: Submits the 4-digit OTP. The backend validates it, auto-generates a unique username (e.g. s48291), moves the record from pending_users to users with isManualSignup: true, and returns the credentials and accessToken."
+        "description": "Step 2: Submits the 4-digit OTP. The backend validates it, auto-generates a unique username (e.g. s48291), moves user to users table with isManualSignup: true, and returns credentials & accessToken."
       },
       "response": [
         {
-          "name": "200 OK - User Verified & Created",
+          "name": "200 OK - Success (User Created & Logged In)",
           "originalRequest": {
             "method": "POST",
             "header": [
@@ -305,7 +305,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"User verified and registered successfully.\",\n  \"data\": {\n    \"userName\": \"s48291\",\n    \"email\": \"reviewer.student@apple.com\",\n    \"fullName\": \"Apple Reviewer Student\",\n    \"role\": \"Student\",\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+          "body": "{\n  \"success\": true,\n  \"message\": \"User verified and registered successfully.\",\n  \"meta\": null,\n  \"result\": {\n    \"userName\": \"s48291\",\n    \"email\": \"reviewer.student@apple.com\",\n    \"fullName\": \"Apple Reviewer Student\",\n    \"role\": \"Student\",\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
         },
         {
           "name": "401 Unauthorized - Invalid OTP",
@@ -347,7 +347,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"statusCode\": 401,\n  \"success\": false,\n  \"message\": \"Invalid OTP.\"\n}"
+          "body": "{\n  \"success\": false,\n  \"message\": \"Invalid OTP.\",\n  \"errorMessages\": [\n    {\n      \"path\": \"\",\n      \"message\": \"Invalid OTP.\"\n    }\n  ]\n}"
         },
         {
           "name": "410 Gone - OTP Expired",
@@ -389,7 +389,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"statusCode\": 410,\n  \"success\": false,\n  \"message\": \"OTP has expired. Please sign up again.\"\n}"
+          "body": "{\n  \"success\": false,\n  \"message\": \"OTP has expired. Please sign up again.\",\n  \"errorMessages\": [\n    {\n      \"path\": \"\",\n      \"message\": \"OTP has expired. Please sign up again.\"\n    }\n  ]\n}"
         }
       ]
     },
@@ -426,7 +426,7 @@
       },
       "response": [
         {
-          "name": "200 OK - Logged In",
+          "name": "200 OK - Success (Logged In)",
           "originalRequest": {
             "method": "POST",
             "header": [
@@ -465,7 +465,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"User successfully logged in\",\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"id\": \"66f123456789abcdef012345\",\n    \"role\": \"Student\",\n    \"gradeId\": null\n  }\n}"
+          "body": "{\n  \"success\": true,\n  \"message\": \"User successfully logged in\",\n  \"meta\": null,\n  \"result\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"id\": \"66f123456789abcdef012345\",\n    \"role\": \"Student\",\n    \"gradeId\": null\n  }\n}"
         }
       ]
     },
@@ -502,7 +502,7 @@
       },
       "response": [
         {
-          "name": "200 OK - Logged In via Email",
+          "name": "200 OK - Success (Logged In via Email)",
           "originalRequest": {
             "method": "POST",
             "header": [
@@ -541,7 +541,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"User successfully logged in\",\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"id\": \"66f123456789abcdef012345\",\n    \"role\": \"Student\",\n    \"gradeId\": null\n  }\n}"
+          "body": "{\n  \"success\": true,\n  \"message\": \"User successfully logged in\",\n  \"meta\": null,\n  \"result\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"id\": \"66f123456789abcdef012345\",\n    \"role\": \"Student\",\n    \"gradeId\": null\n  }\n}"
         }
       ]
     },
@@ -569,7 +569,7 @@
       },
       "response": [
         {
-          "name": "200 OK - Deleted",
+          "name": "200 OK - Success (Deleted)",
           "originalRequest": {
             "method": "DELETE",
             "header": [
@@ -599,7 +599,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"Manual test signups deleted successfully\",\n  \"data\": {\n    \"count\": 3\n  }\n}"
+          "body": "{\n  \"success\": true,\n  \"message\": \"Manual test signups deleted successfully\",\n  \"meta\": null,\n  \"result\": {\n    \"count\": 3\n  }\n}"
         }
       ]
     }
