@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const ResoucresTypeEnum = z.enum(["Audio", "Video", "Pdf" , "Link"]);
+export const ResoucresTypeEnum = z.enum(["Audio", "Video", "Pdf", "Image", "Link"]);
 
 export const CreateResourceSchema = z.object({
   title: z.string().min(1, "Title is required"),

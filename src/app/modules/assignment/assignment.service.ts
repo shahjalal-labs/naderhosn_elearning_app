@@ -36,6 +36,15 @@ const createAssignment = async (
     );
   }
 
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  if (new Date(data.dueDate) < todayStart) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Due date cannot be in the past"
+    );
+  }
+
   let attachament: string;
   if (file) {
     attachament = (await uploadToDigitalOceanAWS(file)).Location;

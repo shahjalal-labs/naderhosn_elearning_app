@@ -7,7 +7,18 @@ export const createAssignmentSchema = z.object({
   endPage: z.string(),
   instruction: z.string().min(1, "Instruction is required"),
   attachament: z.string().url("Attachment must be a valid URL").optional(),
-  dueDate: z.string().datetime({ message: "Invalid date format" }),
+  dueDate: z
+    .string()
+    .datetime({ message: "Invalid date format" })
+    .refine(
+      (val) => {
+        const d = new Date(val);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return d >= today;
+      },
+      { message: "Due date cannot be in the past" }
+    ),
   gradeId: z.string().min(1, "Grade ID is required"),
   bookId: z.string().min(1, "Book ID is required"),
   assignToAll: z.boolean().or(z.string()),
