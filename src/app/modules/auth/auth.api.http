@@ -11,6 +11,17 @@ Content-Type: application/json
   "fcmToken": "sample_fcm_token"
 }
 
+### User Login (Teacher / Student)
+
+POST {{baseUrl}}/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "userName": "s11791",
+  "password": "1234567890",
+  "fcmToken": "sample_fcm_token"
+}
+
 ### Admin Login
 
 POST {{baseUrl}}/auth/admin-login HTTP/1.1
@@ -95,17 +106,20 @@ Content-Type: application/json
 }
 
 ### ===================================================
-### ONLY FOR APPLE SUBMISSION - Manual Signup Flow
+
+
 ### ===================================================
 
+
 ### Step 1: Submit Details & Send OTP (supports JSON or multipart/form-data with profileImage)
+
 POST {{baseUrl}}/auth/signup HTTP/1.1
 Content-Type: application/json
 
 {
-  "fullName": "Apple Reviewer Student",
-  "email": "reviewer@apple.com",
-  "password": "reviewerPassword123",
+  "fullName": "Shahjalal Student",
+  "email": "shahjalal.backend@gmail.com",
+  "password": "1234567890",
   "role": "Student",
   "gender": "Male",
   "phone": "+1234567890",
@@ -113,15 +127,16 @@ Content-Type: application/json
 }
 
 ### Step 2: Verify OTP and Activate User (Returns auto-generated username & token)
+
 POST {{baseUrl}}/auth/verify-signup-otp HTTP/1.1
 Content-Type: application/json
 
 {
-  "email": "reviewer@apple.com",
-  "otp": "1234"
+  "email": "shahjalal.backend@gmail.com",
+  "otp": "5316"
 }
 
 ### Admin: Clean up / Delete all Apple Review manual signups
+
 DELETE {{baseUrl}}/user/manual-signups HTTP/1.1
 Authorization: {{adminToken}}
-

@@ -1,0 +1,607 @@
+{
+  "info": {
+    "_postman_id": "8bfa2e1c-5d63-4819-a1b7-99432e19efaa",
+    "name": "Manual User Signup (Apple Submission)",
+    "description": "Collection for manual Student and Teacher sign up flow built for Apple App Store Review compliance. Includes 2-step OTP registration, login with auto-generated username or email, and admin cleanup endpoint.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.darelchimalapp.com/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userEmail",
+      "value": "reviewer.student@apple.com",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Signup - Student (JSON)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Apple Reviewer Student\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"reviewPassword123\",\n  \"role\": \"Student\",\n  \"gender\": \"Male\",\n  \"phone\": \"+12025550143\",\n  \"DOB\": \"2004-05-15\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "signup"
+          ]
+        },
+        "description": "Step 1: Initiates signup for a student. Generates a 4-digit OTP, holds info in temporary pending_users table, and emails OTP."
+      },
+      "response": [
+        {
+          "name": "200 OK - OTP Sent",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Apple Reviewer Student\",\n  \"email\": \"reviewer.student@apple.com\",\n  \"password\": \"reviewPassword123\",\n  \"role\": \"Student\",\n  \"gender\": \"Male\",\n  \"phone\": \"+12025550143\",\n  \"DOB\": \"2004-05-15\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"OTP sent to your email. Please verify to complete registration.\",\n  \"data\": {\n    \"email\": \"reviewer.student@apple.com\"\n  }\n}"
+        },
+        {
+          "name": "409 Conflict - Email Already Exists",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Apple Reviewer Student\",\n  \"email\": \"existing.user@apple.com\",\n  \"password\": \"reviewPassword123\",\n  \"role\": \"Student\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "status": "Conflict",
+          "code": 409,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"statusCode\": 409,\n  \"success\": false,\n  \"message\": \"User with this email already exists\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "1b. Signup - Teacher with Profile Image (Multipart Form-Data)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "fullName",
+              "value": "Sarah Teacher",
+              "type": "text"
+            },
+            {
+              "key": "email",
+              "value": "sarah.teacher@apple.com",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "teacherSecret123",
+              "type": "text"
+            },
+            {
+              "key": "role",
+              "value": "Teacher",
+              "type": "text"
+            },
+            {
+              "key": "gender",
+              "value": "Female",
+              "type": "text"
+            },
+            {
+              "key": "phone",
+              "value": "+12025550189",
+              "type": "text"
+            },
+            {
+              "key": "DOB",
+              "value": "1990-08-22",
+              "type": "text"
+            },
+            {
+              "key": "profileImage",
+              "type": "file",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "signup"
+          ]
+        },
+        "description": "Step 1 (Multipart): Allows uploading a raw profile image file alongside teacher registration fields."
+      },
+      "response": [
+        {
+          "name": "200 OK - OTP Sent",
+          "originalRequest": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"OTP sent to your email. Please verify to complete registration.\",\n  \"data\": {\n    \"email\": \"sarah.teacher@apple.com\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "2. Verify Signup OTP & Activate Account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"otp\": \"1234\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/verify-signup-otp",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "verify-signup-otp"
+          ]
+        },
+        "description": "Step 2: Submits the 4-digit OTP. The backend validates it, auto-generates a unique username (e.g. s48291), moves the record from pending_users to users with isManualSignup: true, and returns the credentials and accessToken."
+      },
+      "response": [
+        {
+          "name": "200 OK - User Verified & Created",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"reviewer.student@apple.com\",\n  \"otp\": \"4821\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-signup-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-signup-otp"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"User verified and registered successfully.\",\n  \"data\": {\n    \"userName\": \"s48291\",\n    \"email\": \"reviewer.student@apple.com\",\n    \"fullName\": \"Apple Reviewer Student\",\n    \"role\": \"Student\",\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+        },
+        {
+          "name": "401 Unauthorized - Invalid OTP",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"reviewer.student@apple.com\",\n  \"otp\": \"0000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-signup-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-signup-otp"
+              ]
+            }
+          },
+          "status": "Unauthorized",
+          "code": 401,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"statusCode\": 401,\n  \"success\": false,\n  \"message\": \"Invalid OTP.\"\n}"
+        },
+        {
+          "name": "410 Gone - OTP Expired",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"reviewer.student@apple.com\",\n  \"otp\": \"4821\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-signup-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-signup-otp"
+              ]
+            }
+          },
+          "status": "Gone",
+          "code": 410,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"statusCode\": 410,\n  \"success\": false,\n  \"message\": \"OTP has expired. Please sign up again.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "3. Login - Using Auto-Generated UserName",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userName\": \"s48291\",\n  \"password\": \"reviewPassword123\",\n  \"fcmToken\": \"sample_fcm_token\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Standard login endpoint using the auto-generated userName returned from the verification step."
+      },
+      "response": [
+        {
+          "name": "200 OK - Logged In",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"s48291\",\n  \"password\": \"reviewPassword123\",\n  \"fcmToken\": \"sample_fcm_token\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"User successfully logged in\",\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"id\": \"66f123456789abcdef012345\",\n    \"role\": \"Student\",\n    \"gradeId\": null\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "4. Login - Using Email Directly",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userName\": \"{{userEmail}}\",\n  \"password\": \"reviewPassword123\",\n  \"fcmToken\": \"sample_fcm_token\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Standard login endpoint passing the user's email directly into the userName field."
+      },
+      "response": [
+        {
+          "name": "200 OK - Logged In via Email",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"reviewer.student@apple.com\",\n  \"password\": \"reviewPassword123\",\n  \"fcmToken\": \"sample_fcm_token\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"User successfully logged in\",\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"id\": \"66f123456789abcdef012345\",\n    \"role\": \"Student\",\n    \"gradeId\": null\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "5. Admin - Clean Up / Delete All Manual Signups",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/manual-signups",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "user",
+            "manual-signups"
+          ]
+        },
+        "description": "Admin endpoint to wipe all test users registered through the manual signup flow after the Apple review is completed."
+      },
+      "response": [
+        {
+          "name": "200 OK - Deleted",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/manual-signups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "manual-signups"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"Manual test signups deleted successfully\",\n  \"data\": {\n    \"count\": 3\n  }\n}"
+        }
+      ]
+    }
+  ]
+}
