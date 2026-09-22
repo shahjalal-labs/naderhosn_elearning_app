@@ -6,8 +6,8 @@ POST {{baseUrl}}/auth/login HTTP/1.1
 Content-Type: application/json
 
 {
-  "userName": "DAC-Sajeera",
-  "password": "DAC-1",
+  "userName": "DAC-BK202525",
+  "password": "DAC-AS1",
   "fcmToken": "sample_fcm_token"
 }
 

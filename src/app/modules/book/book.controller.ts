@@ -33,7 +33,7 @@ const getAllBooksCategories = catchAsync(
       message: "Books has been retrieved successfully",
       data: result,
     });
-  }
+  },
 );
 const getBooksCategoryById = catchAsync(async (req: Request, res: Response) => {
   const result = await bookServices.getBookCategoryById(req.params.id);
@@ -52,7 +52,7 @@ const updateBooksCategory = catchAsync(async (req: Request, res: Response) => {
   const result = await bookServices.updateBookCategory(
     req.params.id,
     req.body,
-    file
+    file,
   );
   sendResponse(res, {
     success: true,
@@ -98,15 +98,20 @@ const getAllBooks = catchAsync(async (_req: Request, res: Response) => {
     data: result,
   });
 });
-const getAllBooksForTeacher = catchAsync(async (_req: Request, res: Response) => {
-  const result = await bookServices.getAllBooksForTeacher(_req.query , _req.user);
-  sendResponse(res, {
-    success: true,
-    statusCode: 200,
-    message: "All books has been retrived successfully",
-    data: result,
-  });
-});
+const getAllBooksForTeacher = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await bookServices.getAllBooksForTeacher(
+      req.query,
+      req.user,
+    );
+    sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      message: "All books has been retrived successfully",
+      data: result,
+    });
+  },
+);
 
 const getAllBooksForForms = catchAsync(async (_req: Request, res: Response) => {
   const result = await bookServices.getAllBooksForForm();
@@ -128,7 +133,6 @@ const getBookById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-
 const updateBook = catchAsync(async (req: Request, res: Response) => {
   let coverImg: Express.Multer.File | undefined;
   let file: Express.Multer.File | undefined;
@@ -142,7 +146,7 @@ const updateBook = catchAsync(async (req: Request, res: Response) => {
     bookId,
     req.body,
     coverImg,
-    file
+    file,
   );
   sendResponse(res, {
     success: true,

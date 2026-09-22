@@ -118,48 +118,44 @@ const getAssignmentById = async (id: string, user: JwtPayload) => {
     //  Admin + Teacher (common logic)
     case UserRole.Admin:
     case UserRole.Teacher: {
-      const students = await prisma.assignmentStudent.findMany({
-        where: { assignmentId: id },
+      const assignment = await prisma.assignment.findUnique({
+        where: { id },
         include: {
-          assignment: {
+          book: {
+            select: { id: true, bookName: true, coverImg: true },
+          },
+          students: {
             include: {
-              book: {
-                select: { id: true, bookName: true, coverImg: true },
-              },
+              user: true,
             },
           },
-          user: true,
         },
       });
 
-      if (!students.length) {
-        throw new ApiError(httpStatus.NOT_FOUND, "No students assigned.");
+      if (!assignment) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Assignment not found.");
       }
 
       const assignmentData = {
-        id: students[0].assignment.id,
-        title: students[0].assignment.title,
-        instruction: students[0].assignment.instruction,
-        startPage: students[0].assignment.startPage,
-        endPage: students[0].assignment.endPage,
-        assignDate: students[0].assignment.createdAt,
-        dueDate: students[0].assignment.dueDate,
-        bookData: students[0].assignment.book,
+        id: assignment.id,
+        title: assignment.title,
+        instruction: assignment.instruction,
+        startPage: assignment.startPage,
+        endPage: assignment.endPage,
+        assignDate: assignment.createdAt,
+        dueDate: assignment.dueDate,
+        bookData: assignment.book,
       };
 
-      // count submissions (option A: DB query, option B: filter)
-      const totalSubmissions = await prisma.assignmentStudent.count({
-        where: {
-          assignmentId: id,
-          assignmentStatus: AssignmentStatus.Submitted,
-        },
-      });
+      const totalSubmissions = assignment.students.filter(
+        (s) => s.assignmentStatus === AssignmentStatus.Submitted
+      ).length;
 
-      const studentsArray = students.map((s) => ({
+      const studentsArray = assignment.students.map((s) => ({
         assignmentProgressId: s.id,
-        studentId: s.user.id,
-        fullName: s.user.fullName,
-        email: s.user.email,
+        studentId: s.user?.id,
+        fullName: s.user?.fullName,
+        email: s.user?.email,
         grade: s.assignmentGrade,
         gradeBy: s.gradedBy,
         submittedAt: s.submittedAt,

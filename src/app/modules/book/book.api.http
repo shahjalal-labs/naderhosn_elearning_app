@@ -5,7 +5,7 @@
 GET {{baseUrl}}/book/for-teacher?page=1
   &limit=10 HTTP/1.1
 # Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMjdlNGU1Mzc0ZDQ3NDI5ZGJjOWMwNyIsImVtYWlsIjoiaW5mb0BhbG1vYXR0YXNlbXNjaG9vbC5jb20iLCJyb2xlIjoiVGVhY2hlciIsImZ1bGxOYW1lIjoiTXJzIFNhamVlcmEgQW5qdSIsImlhdCI6MTc4OTQ0NTcyMCwiZXhwIjoxNzkwNzQxNzIwfQ.a6ofs2uXEpB9pgXPP8AwePBdAO3h2B9ui62zjTDIDN4
-Authorization: {{gauzman}}
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhYWEzMGIwZmFmMDczN2VmMTgwNDA3MyIsImVtYWlsIjoiIiwicm9sZSI6IlRlYWNoZXIiLCJmdWxsTmFtZSI6IlRlY2ggRXhwbG9yZXJzIFBsdXMgIiwiaWF0IjoxNzg5NjM1NTUzLCJleHAiOjE3OTA5MzE1NTN9.iMRN6kzxmo8t5qpqdYGOCQQyaITR119U8MDBbYSdPIg
 
 ### Get Books for Teacher Filtered by Specific Grade (e.g. Grade 3)
 
