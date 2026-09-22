@@ -86,6 +86,27 @@ const changePassword = catchAsync(async (req, res) => {
   });
 });
 
+const signup = catchAsync(async (req, res) => {
+  const file = req.file as Express.Multer.File;
+  const result = await authService.signupIntoPendingDB(req.body, file);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "OTP sent to your email. Please verify to complete registration.",
+    data: result,
+  });
+});
+
+const verifySignupOtp = catchAsync(async (req, res) => {
+  const result = await authService.verifySignupOtpDB(req.body);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "User verified and registered successfully.",
+    data: result,
+  });
+});
+
 export const authController = {
   loginUser,
   adminLogin,
@@ -95,4 +116,6 @@ export const authController = {
   verifyForgotPasswordOtpCode,
   resetPassword,
   changePassword,
+  signup,
+  verifySignupOtp,
 };

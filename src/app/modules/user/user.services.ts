@@ -377,6 +377,16 @@ const deleteStudentsByAdmin = async () => {
   return;
 };
 
+// ONLY FOR APPLE SUBMISSION - Delete all manual/test signups
+const deleteManualSignups = async () => {
+  const result = await prisma.user.deleteMany({
+    where: {
+      isManualSignup: true,
+    },
+  });
+  return result;
+};
+
 const getUsers = async (query: any) => {
   const { page, limit, skip } = paginationHelper(query);
   const users = await prisma.user.findMany({
@@ -1064,4 +1074,5 @@ export const userService = {
   adminOverViewData,
   deleteStudentsByAdmin,
   deleteMultipleUsersByAdmin,
+  deleteManualSignups,
 };

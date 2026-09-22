@@ -93,3 +93,35 @@ Content-Type: application/json
 {
   "newPassword": "newPassword123"
 }
+
+### ===================================================
+### ONLY FOR APPLE SUBMISSION - Manual Signup Flow
+### ===================================================
+
+### Step 1: Submit Details & Send OTP (supports JSON or multipart/form-data with profileImage)
+POST {{baseUrl}}/auth/signup HTTP/1.1
+Content-Type: application/json
+
+{
+  "fullName": "Apple Reviewer Student",
+  "email": "reviewer@apple.com",
+  "password": "reviewerPassword123",
+  "role": "Student",
+  "gender": "Male",
+  "phone": "+1234567890",
+  "DOB": "2000-01-01"
+}
+
+### Step 2: Verify OTP and Activate User (Returns auto-generated username & token)
+POST {{baseUrl}}/auth/verify-signup-otp HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "reviewer@apple.com",
+  "otp": "1234"
+}
+
+### Admin: Clean up / Delete all Apple Review manual signups
+DELETE {{baseUrl}}/user/manual-signups HTTP/1.1
+Authorization: {{adminToken}}
+

@@ -20,6 +20,8 @@ model User {
   role          UserRole
   status        UserStatus @default(Active)
 
+  isManualSignup Boolean?   @default(false) // ONLY FOR APPLE SUBMISSION - Tracks manual signups for easy removal
+
   joinedAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -32,6 +34,24 @@ model User {
   teachersBookCategories teachersBookCategories[]
 
   @@map("users")
+}
+
+// ONLY FOR APPLE SUBMISSION - Temporary pending user registrations before OTP verification
+model PendingUser {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  fullName     String?
+  email        String     @unique
+  password     String
+  gender       Gender?
+  DOB          DateTime?
+  phone        String?
+  profileImage String?    @default("https://i.ibb.co.com/nrs3FjM/images.png")
+  role         UserRole   @default(Student)
+  otpCode      String
+  expiresAt    DateTime
+  createdAt    DateTime   @default(now())
+
+  @@map("pending_users")
 }
 
 model Otp {

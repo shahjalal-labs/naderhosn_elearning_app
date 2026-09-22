@@ -70,6 +70,17 @@ const deleteMultipleUsersByAdmin = catchAsync(async (req, res) => {
   });
 });
 
+// ONLY FOR APPLE SUBMISSION - Delete all manual signups
+const deleteManualSignups = catchAsync(async (req, res) => {
+  const result = await userService.deleteManualSignups();
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Manual test signups deleted successfully",
+    data: result,
+  });
+});
+
 //update user
 const updateUser = catchAsync(async (req, res) => {
   const file = req.file as Express.Multer.File;
@@ -226,5 +237,6 @@ export const UserControllers = {
   updateStudentByAdmin,
   adminOverviewStatisticsData,
   deleteStudentsByAdmin,
-  deleteMultipleUsersByAdmin
+  deleteMultipleUsersByAdmin,
+  deleteManualSignups,
 };
