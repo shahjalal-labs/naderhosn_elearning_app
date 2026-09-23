@@ -1,6 +1,10 @@
 export function normalizeGrade(name: string): string[] {
   if (!name) return [];
-  const norm = name.toLowerCase().trim();
+  // Strip Arabic diacritics (tashkeel)
+  const norm = name
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .trim();
   const res: string[] = [];
 
   // Kindergarten / Preschool
@@ -72,6 +76,22 @@ export function normalizeGrade(name: string): string[] {
   }
 
   return Array.from(new Set(res));
+}
+
+export function formatNormalizedGrade(level: string): string {
+  if (level === 'preschool') return 'Preschool';
+  if (level.startsWith('kg')) return level.toUpperCase();
+  return `Grade ${level}`;
+}
+
+export function getBookDisplayGrades(bookName?: string | null, fallbackGrades: string[] = []): string[] {
+  if (bookName) {
+    const levels = normalizeGrade(bookName);
+    if (levels.length > 0) {
+      return levels.map(formatNormalizedGrade);
+    }
+  }
+  return fallbackGrades;
 }
 
 export function gradesMatch(bookLevels: string[], gradeLevels: string[]): boolean {

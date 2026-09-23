@@ -3,7 +3,7 @@ import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAW
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import prisma from "../../../shared/prisma";
-import { normalizeGrade, gradesMatch } from "../../../helpers/gradeMatcher";
+import { normalizeGrade, gradesMatch, getBookDisplayGrades } from "../../../helpers/gradeMatcher";
 
 type CreateGradeInput = {
   gradeLevel: string;
@@ -513,31 +513,6 @@ const sortGradeNames = (grades: string[]): string[] => {
   });
 };
 
-const inferGradeFromTitle = (bookName?: string | null): string[] => {
-  if (!bookName) return [];
-  const lower = bookName.toLowerCase();
-
-  const gradeMatch = lower.match(/\bgrade\s*(\d{1,2})\b/);
-  if (gradeMatch) return [`Grade ${parseInt(gradeMatch[1], 10)}`];
-
-  const levelMatch = lower.match(/\blevel\s*(\d{1,2})\b/);
-  if (levelMatch) return [`Grade ${parseInt(levelMatch[1], 10)}`];
-
-  const kgMatch = lower.match(/\bkg\s*([1-3])\b/);
-  if (kgMatch) return [`KG${kgMatch[1]}`];
-
-  if (bookName.includes("المستوى الأول") || bookName.includes("السّنة الأولى")) return ["Grade 1"];
-  if (bookName.includes("المستوى الثاني") || bookName.includes("السّنة الثانية")) return ["Grade 2"];
-  if (bookName.includes("المستوى الثالث") || bookName.includes("السّنة الثالثة")) return ["Grade 3"];
-  if (bookName.includes("المستوى الرابع") || bookName.includes("السّنة الرابعة")) return ["Grade 4"];
-  if (bookName.includes("المستوى الخامس") || bookName.includes("السّنة الخامسة")) return ["Grade 5"];
-  if (bookName.includes("المستوى السادس") || bookName.includes("السّنة السادسة")) return ["Grade 6"];
-  if (bookName.includes("تمهيدي") || bookName.includes("رياض الاطفال") || bookName.includes("روضات")) return ["KG / Preschool"];
-  if (lower.includes("starter")) return ["Starter"];
-
-  return [];
-};
-
 const getNotAssignedBooksForSchool = async (schoolId: string) => {
   const school = await prisma.school.findUnique({
     where: { id: schoolId },
@@ -579,15 +554,18 @@ const getNotAssignedBooksForSchool = async (schoolId: string) => {
   });
 
   return notAssignedBooks.map((book) => {
-    const gradesSet = new Set<string>();
-    for (const gb of book.GradeBooks) {
-      if (gb.grade?.grade) {
-        gradesSet.add(gb.grade.grade);
-      }
-    }
-    let grades = sortGradeNames(Array.from(gradesSet));
+    // 1. Determine canonical grade from book title/metadata
+    let grades = getBookDisplayGrades(book.bookName);
+
+    // 2. Fall back to GradeBooks entries if not explicitly identified in title
     if (grades.length === 0) {
-      grades = inferGradeFromTitle(book.bookName);
+      const gradesSet = new Set<string>();
+      for (const gb of book.GradeBooks) {
+        if (gb.grade?.grade) {
+          gradesSet.add(gb.grade.grade);
+        }
+      }
+      grades = sortGradeNames(Array.from(gradesSet));
     }
 
     return {
