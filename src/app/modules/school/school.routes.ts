@@ -38,7 +38,7 @@ router.post(
   schoolControllers.assignBooksToSchool
 );
 router.get("/not-assigned-books/:id", schoolControllers.getNotAssignedBooksForSchool);
-
-
+router.get("/assigned-books/:id", schoolControllers.getAssignedBooksForSchool);
+router.post("/unassign-books", auth(UserRole.Admin), schoolControllers.unassignBooksFromSchool);
 
 export const schoolRoutes = router;

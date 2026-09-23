@@ -241,29 +241,76 @@ const updateSchool = async (
     }
   }
 
-  // 3. Update school basic info
-  const res = await prisma.school.update({
-    where: { id },
-    data: {
-      name: data.schoolData.name,
-      location: data.schoolData.location,
-      teacherCount: data.schoolData.teacherCount,
-      studentsCount: data.schoolData.studentsCount,
-      activeStudents: data.schoolData.activeStudents,
-      activeTeachers: data.schoolData.activeTeachers,
-      schoolLogo: data.schoolData.schoolLogo,
-      schoolDocuments: data.schoolDocuments,
-    },
-  });
+  // 3. Update school basic info (only if schoolData is provided and not empty)
+  if (data.schoolData && Object.keys(data.schoolData).length > 0) {
+    const updatePayload: any = {};
+    if (data.schoolData.name !== undefined) updatePayload.name = data.schoolData.name;
+    if (data.schoolData.location !== undefined) updatePayload.location = data.schoolData.location;
+    if (data.schoolData.teacherCount !== undefined) updatePayload.teacherCount = data.schoolData.teacherCount;
+    if (data.schoolData.studentsCount !== undefined) updatePayload.studentsCount = data.schoolData.studentsCount;
+    if (data.schoolData.activeStudents !== undefined) updatePayload.activeStudents = data.schoolData.activeStudents;
+    if (data.schoolData.activeTeachers !== undefined) updatePayload.activeTeachers = data.schoolData.activeTeachers;
+    if (data.schoolData.schoolLogo !== undefined) updatePayload.schoolLogo = data.schoolData.schoolLogo;
+    if (data.schoolDocuments !== undefined) updatePayload.schoolDocuments = data.schoolDocuments;
 
-  // 4. Delete grades
+    if (Object.keys(updatePayload).length > 0) {
+      await prisma.school.update({
+        where: { id },
+        data: updatePayload,
+      });
+    }
+  }
+
+  // 4. Delete grades cleanly from this school only
   if (data.DeleteGrades && data.DeleteGrades.length > 0) {
-    await prisma.grades.deleteMany({
+    const validGrades = await prisma.grades.findMany({
       where: {
         id: { in: data.DeleteGrades },
         schoolId: id,
       },
+      select: { id: true },
     });
+
+    const gradeIdsToDelete = validGrades.map((g) => g.id);
+
+    if (gradeIdsToDelete.length > 0) {
+      const assignments = await prisma.assignment.findMany({
+        where: { gradeId: { in: gradeIdsToDelete } },
+        select: { id: true },
+      });
+      const assignmentIds = assignments.map((a) => a.id);
+
+      await prisma.$transaction([
+        prisma.studentGrades.deleteMany({
+          where: { gradeId: { in: gradeIdsToDelete } },
+        }),
+        prisma.teacherGrades.deleteMany({
+          where: { gradeId: { in: gradeIdsToDelete } },
+        }),
+        prisma.gradeBooks.deleteMany({
+          where: { gradeId: { in: gradeIdsToDelete } },
+        }),
+        prisma.announcments.deleteMany({
+          where: { gradeId: { in: gradeIdsToDelete } },
+        }),
+        ...(assignmentIds.length > 0
+          ? [
+              prisma.assignmentStudent.deleteMany({
+                where: { assignmentId: { in: assignmentIds } },
+              }),
+              prisma.assignment.deleteMany({
+                where: { id: { in: assignmentIds } },
+              }),
+            ]
+          : []),
+        prisma.grades.deleteMany({
+          where: {
+            id: { in: gradeIdsToDelete },
+            schoolId: id,
+          },
+        }),
+      ]);
+    }
   }
 
   // 5. Add new grades
@@ -444,22 +491,112 @@ const getNotAssignedBooksForSchool = async (schoolId: string) => {
   if (!school) {
     throw new ApiError(httpStatus.NOT_FOUND, "School not found");
   }
-  // Implementation for fetching not assigned books would go here
 
-  const assignedBookIds = await prisma.gradeBooks.findMany({
-    where: { gradeId: { in: school.grades.map((g) => g.id) } },
-    select: { bookId: true },
-  }).then((res) => res.map((b) => b.bookId));
+  const assignedBookIds = await prisma.gradeBooks
+    .findMany({
+      where: { gradeId: { in: school.grades.map((g) => g.id) } },
+      select: { bookId: true },
+    })
+    .then((res) => res.map((b) => b.bookId));
 
   const notAssignedBooks = await prisma.books.findMany({
     where: { id: { notIn: assignedBookIds } },
-    select : {
-      id:true,
-      bookName:true
-    }
+    select: {
+      id: true,
+      bookName: true,
+      coverImg: true,
+      author: true,
+    },
   });
   return notAssignedBooks;
-}
+};
+
+const getAssignedBooksForSchool = async (schoolId: string) => {
+  const school = await prisma.school.findUnique({
+    where: { id: schoolId },
+    include: { grades: true },
+  });
+  if (!school) {
+    throw new ApiError(httpStatus.NOT_FOUND, "School not found");
+  }
+
+  const gradeIds = school.grades.map((g) => g.id);
+
+  const gradeBooks = await prisma.gradeBooks.findMany({
+    where: { gradeId: { in: gradeIds } },
+    include: {
+      book: {
+        select: {
+          id: true,
+          bookName: true,
+          coverImg: true,
+          author: true,
+        },
+      },
+      grade: {
+        select: {
+          id: true,
+          grade: true,
+        },
+      },
+    },
+  });
+
+  // Group by book ID to show book details and its assigned grades
+  const booksMap = new Map<
+    string,
+    {
+      id: string;
+      bookName: string;
+      coverImg?: string | null;
+      author?: string | null;
+      grades: string[];
+    }
+  >();
+
+  for (const gb of gradeBooks) {
+    if (!gb.book) continue;
+    if (!booksMap.has(gb.book.id)) {
+      booksMap.set(gb.book.id, {
+        id: gb.book.id,
+        bookName: gb.book.bookName || "Untitled Book",
+        coverImg: gb.book.coverImg,
+        author: gb.book.author,
+        grades: [],
+      });
+    }
+    if (gb.grade?.grade && !booksMap.get(gb.book.id)!.grades.includes(gb.grade.grade)) {
+      booksMap.get(gb.book.id)!.grades.push(gb.grade.grade);
+    }
+  }
+
+  return Array.from(booksMap.values());
+};
+
+const unassignBooksFromSchool = async (payload: {
+  schoolId: string;
+  bookIds: string[];
+}) => {
+  const { schoolId, bookIds } = payload;
+  const school = await prisma.school.findUnique({
+    where: { id: schoolId },
+    include: { grades: true },
+  });
+  if (!school) {
+    throw new ApiError(httpStatus.NOT_FOUND, "School not found");
+  }
+
+  const gradeIds = school.grades.map((g) => g.id);
+
+  const deleted = await prisma.gradeBooks.deleteMany({
+    where: {
+      gradeId: { in: gradeIds },
+      bookId: { in: bookIds },
+    },
+  });
+
+  return deleted;
+};
 
 export const schoolServices = {
   createSchool,
@@ -472,4 +609,6 @@ export const schoolServices = {
   uploadSchoolDocuments,
   assignBooksToSchool,
   getNotAssignedBooksForSchool,
+  getAssignedBooksForSchool,
+  unassignBooksFromSchool,
 };

@@ -127,7 +127,26 @@ const getNotAssignedBooksForSchool = catchAsync(async (req: Request, res: Respon
   });
 });
 
- 
+const getAssignedBooksForSchool = catchAsync(async (req: Request, res: Response) => {
+  const result = await schoolServices.getAssignedBooksForSchool(req.params.id);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Assigned books for the school retrieved successfully",
+    data: result,
+  });
+});
+
+const unassignBooksFromSchool = catchAsync(async (req: Request, res: Response) => {
+  const result = await schoolServices.unassignBooksFromSchool(req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Books unassigned from school successfully",
+    data: result,
+  });
+});
+
 export const schoolControllers = {
   createSchool,
   getAllSchools,
@@ -138,6 +157,8 @@ export const schoolControllers = {
   getAllSchoolsForForms,
   uploadSchoolDocuments,
   assignBooksToSchool,
-  getNotAssignedBooksForSchool
-}
+  getNotAssignedBooksForSchool,
+  getAssignedBooksForSchool,
+  unassignBooksFromSchool,
+};
   
