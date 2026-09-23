@@ -483,6 +483,61 @@ const assignBooksToSchool = async (payload: {
   });
 };
 
+const STANDARD_GRADE_ORDER = [
+  "Preschool",
+  "KG1",
+  "KG2",
+  "KG3",
+  "Grade 1",
+  "Grade 2",
+  "Grade 3",
+  "Grade 4",
+  "Grade 5",
+  "Grade 6",
+  "Grade 7",
+  "Grade 8",
+  "Grade 9",
+  "Grade 10",
+  "Grade 11",
+  "Grade 12",
+];
+
+const sortGradeNames = (grades: string[]): string[] => {
+  return [...grades].sort((a, b) => {
+    const idxA = STANDARD_GRADE_ORDER.indexOf(a);
+    const idxB = STANDARD_GRADE_ORDER.indexOf(b);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+  });
+};
+
+const inferGradeFromTitle = (bookName?: string | null): string[] => {
+  if (!bookName) return [];
+  const lower = bookName.toLowerCase();
+
+  const gradeMatch = lower.match(/\bgrade\s*(\d{1,2})\b/);
+  if (gradeMatch) return [`Grade ${parseInt(gradeMatch[1], 10)}`];
+
+  const levelMatch = lower.match(/\blevel\s*(\d{1,2})\b/);
+  if (levelMatch) return [`Grade ${parseInt(levelMatch[1], 10)}`];
+
+  const kgMatch = lower.match(/\bkg\s*([1-3])\b/);
+  if (kgMatch) return [`KG${kgMatch[1]}`];
+
+  if (bookName.includes("المستوى الأول") || bookName.includes("السّنة الأولى")) return ["Grade 1"];
+  if (bookName.includes("المستوى الثاني") || bookName.includes("السّنة الثانية")) return ["Grade 2"];
+  if (bookName.includes("المستوى الثالث") || bookName.includes("السّنة الثالثة")) return ["Grade 3"];
+  if (bookName.includes("المستوى الرابع") || bookName.includes("السّنة الرابعة")) return ["Grade 4"];
+  if (bookName.includes("المستوى الخامس") || bookName.includes("السّنة الخامسة")) return ["Grade 5"];
+  if (bookName.includes("المستوى السادس") || bookName.includes("السّنة السادسة")) return ["Grade 6"];
+  if (bookName.includes("تمهيدي") || bookName.includes("رياض الاطفال") || bookName.includes("روضات")) return ["KG / Preschool"];
+  if (lower.includes("starter")) return ["Starter"];
+
+  return [];
+};
+
 const getNotAssignedBooksForSchool = async (schoolId: string) => {
   const school = await prisma.school.findUnique({
     where: { id: schoolId },
@@ -506,9 +561,44 @@ const getNotAssignedBooksForSchool = async (schoolId: string) => {
       bookName: true,
       coverImg: true,
       author: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
+      GradeBooks: {
+        select: {
+          grade: {
+            select: {
+              grade: true,
+            },
+          },
+        },
+      },
     },
   });
-  return notAssignedBooks;
+
+  return notAssignedBooks.map((book) => {
+    const gradesSet = new Set<string>();
+    for (const gb of book.GradeBooks) {
+      if (gb.grade?.grade) {
+        gradesSet.add(gb.grade.grade);
+      }
+    }
+    let grades = sortGradeNames(Array.from(gradesSet));
+    if (grades.length === 0) {
+      grades = inferGradeFromTitle(book.bookName);
+    }
+
+    return {
+      id: book.id,
+      bookName: book.bookName,
+      coverImg: book.coverImg,
+      author: book.author,
+      categoryName: book.category?.name || null,
+      grades,
+    };
+  });
 };
 
 const getAssignedBooksForSchool = async (schoolId: string) => {
@@ -531,6 +621,11 @@ const getAssignedBooksForSchool = async (schoolId: string) => {
           bookName: true,
           coverImg: true,
           author: true,
+          category: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
       grade: {
@@ -550,6 +645,7 @@ const getAssignedBooksForSchool = async (schoolId: string) => {
       bookName: string;
       coverImg?: string | null;
       author?: string | null;
+      categoryName?: string | null;
       grades: string[];
     }
   >();
@@ -562,6 +658,7 @@ const getAssignedBooksForSchool = async (schoolId: string) => {
         bookName: gb.book.bookName || "Untitled Book",
         coverImg: gb.book.coverImg,
         author: gb.book.author,
+        categoryName: gb.book.category?.name || null,
         grades: [],
       });
     }
@@ -570,7 +667,10 @@ const getAssignedBooksForSchool = async (schoolId: string) => {
     }
   }
 
-  return Array.from(booksMap.values());
+  return Array.from(booksMap.values()).map((b) => ({
+    ...b,
+    grades: sortGradeNames(b.grades),
+  }));
 };
 
 const unassignBooksFromSchool = async (payload: {
