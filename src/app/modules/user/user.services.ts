@@ -4,12 +4,15 @@ import prisma from "../../../shared/prisma";
 import { paginationHelper } from "../../../shared/pagination";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import bcrypt from "bcryptjs";
-import { usersQueue } from "../../../queue/users.queue";
 import {
+  bulkUploadStudent,
+  bulkUploadTeacher,
   CreateNewStudentType,
   CreateNewTeacherType,
   generateStudentUserName,
   generateTeacherUserName,
+  generateUniqueStudentUserNames,
+  generateUniqueTeacherUserNames,
   IUserGradePayload,
   randomPassword,
   usersQuery,
@@ -987,22 +990,20 @@ const bulkUploadStudentIntoDB = async (payload: {
   if (!school) throw new ApiError(404, "School not found");
   if (!grade) throw new ApiError(404, "Grade not found");
 
-  // Generate usernames/passwords
-  const users = Array.from({ length: payload.numberOfStudent }, () => ({
-    loginUserName: generateStudentUserName(),
+  // Generate unique usernames/passwords
+  const usernames = await generateUniqueStudentUserNames(
+    payload.numberOfStudent
+  );
+  const users = usernames.map((loginUserName) => ({
+    loginUserName,
     password: randomPassword(),
   }));
 
-  // Add job to queue with pre-generated users
-  await usersQueue.add("uploadStudents", {
-    type: "student",
-    users,
-    gradeId: payload.gradeId,
-  });
+  // Perform bulk upload in batch (no N+1 loop)
+  await bulkUploadStudent(users, payload.gradeId);
 
-  // Return immediately to frontend
   return {
-    message: "Student bulk upload job has been queued",
+    message: `${payload.numberOfStudent} students created successfully`,
     students: users,
   };
 };
@@ -1029,21 +1030,21 @@ const bulkUploadTeacherIntoDB = async (payload: {
   if (bookCategories.length !== payload.bookCategoryIds.length) {
     throw new ApiError(404, "Some book categories not found");
   }
-  // Generate usernames/passwords
-  const users = Array.from({ length: payload.numberOfTeacher }, () => ({
-    loginUserName: generateTeacherUserName(),
+
+  // Generate unique usernames/passwords
+  const usernames = await generateUniqueTeacherUserNames(
+    payload.numberOfTeacher
+  );
+  const users = usernames.map((loginUserName) => ({
+    loginUserName,
     password: randomPassword(),
   }));
 
-  await usersQueue.add("uploadTeachers", {
-    type: "teacher",
-    users,
-    gradeIds: payload.gradeIds,
-    bookCategoryIds: payload.bookCategoryIds,
-  });
+  // Perform bulk upload in batch (no N+1 loop)
+  await bulkUploadTeacher(users, payload.gradeIds, payload.bookCategoryIds);
 
- return {
-    message: "Teacher bulk upload job has been queued",
+  return {
+    message: `${payload.numberOfTeacher} teachers created successfully`,
     teachers: users,
   };
 };

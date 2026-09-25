@@ -62,35 +62,107 @@ export function randomPassword(): string {
 }
 
 
+import { ObjectId } from "mongodb";
+
+export const generateUniqueStudentUserNames = async (
+  count: number
+): Promise<string[]> => {
+  const generated = new Set<string>();
+  while (generated.size < count) {
+    generated.add(generateStudentUserName());
+  }
+
+  const existing = await prisma.user.findMany({
+    where: { loginUserName: { in: Array.from(generated) } },
+    select: { loginUserName: true },
+  });
+
+  if (existing.length === 0) {
+    return Array.from(generated);
+  }
+
+  const existingSet = new Set(existing.map((u) => u.loginUserName));
+  const uniqueList = Array.from(generated).filter((u) => !existingSet.has(u));
+  const finalSet = new Set(uniqueList);
+
+  while (finalSet.size < count) {
+    const candidate = generateStudentUserName();
+    if (!existingSet.has(candidate)) {
+      finalSet.add(candidate);
+    }
+  }
+
+  return Array.from(finalSet);
+};
+
+export const generateUniqueTeacherUserNames = async (
+  count: number
+): Promise<string[]> => {
+  const generated = new Set<string>();
+  while (generated.size < count) {
+    generated.add(generateTeacherUserName());
+  }
+
+  const existing = await prisma.user.findMany({
+    where: { loginUserName: { in: Array.from(generated) } },
+    select: { loginUserName: true },
+  });
+
+  if (existing.length === 0) {
+    return Array.from(generated);
+  }
+
+  const existingSet = new Set(existing.map((u) => u.loginUserName));
+  const uniqueList = Array.from(generated).filter((u) => !existingSet.has(u));
+  const finalSet = new Set(uniqueList);
+
+  while (finalSet.size < count) {
+    const candidate = generateTeacherUserName();
+    if (!existingSet.has(candidate)) {
+      finalSet.add(candidate);
+    }
+  }
+
+  return Array.from(finalSet);
+};
+
 export const bulkUploadStudent = async (
   users: { loginUserName: string; password: string }[],
   gradeId: string
 ) => {
-  // Insert all users in a transaction
-  return await prisma.$transaction(
-    async (tx) => {
-      for (const userData of users) {
-        const user = await tx.user.create({
-          data: {
-            loginUserName: userData.loginUserName,
-            password: userData.password,
-            role: UserRole.Student,
-          },
-        });
+  const usersData: {
+    id: string;
+    loginUserName: string;
+    password: string;
+    role: UserRole;
+  }[] = [];
 
-        // Assign grade
-        await tx.studentGrades.create({
-          data: {
-            studentId: user.id,
-            gradeId,
-          },
-        });
-      }
+  const studentGradeLinks: {
+    studentId: string;
+    gradeId: string;
+  }[] = [];
 
-      return;
-    },
-    { maxWait: 10000, timeout: 60000 }
-  );
+  for (const userData of users) {
+    const userId = new ObjectId().toHexString();
+    usersData.push({
+      id: userId,
+      loginUserName: userData.loginUserName,
+      password: userData.password,
+      role: UserRole.Student,
+    });
+
+    studentGradeLinks.push({
+      studentId: userId,
+      gradeId,
+    });
+  }
+
+  await prisma.$transaction([
+    prisma.user.createMany({ data: usersData }),
+    prisma.studentGrades.createMany({ data: studentGradeLinks }),
+  ]);
+
+  return users;
 };
 
 export const bulkUploadTeacher = async (
@@ -98,42 +170,62 @@ export const bulkUploadTeacher = async (
   gradeIds: string[],
   bookCategoryIds?: string[]
 ) => {
-  // Insert all users in a transaction
-  return await prisma.$transaction(
-    async (tx) => {
-      for (const userData of users) {
-        const user = await tx.user.create({
-          data: {
-            loginUserName: userData.loginUserName,
-            password: userData.password,
-            role: UserRole.Teacher,
-          },
-        });
+  const usersData: {
+    id: string;
+    loginUserName: string;
+    password: string;
+    role: UserRole;
+  }[] = [];
 
-        const teacherGradeLinks = gradeIds.map((gradeId) => ({
-          teacherId: user.id,
-          gradeId,
-        }));
+  const teacherGradeLinks: {
+    teacherId: string;
+    gradeId: string;
+  }[] = [];
 
-        // Assign grade
-        await tx.teacherGrades.createMany({
-          data: teacherGradeLinks,
+  const teacherBookCategoryLinks: {
+    teacherId: string;
+    categoryId: string;
+  }[] = [];
+
+  for (const userData of users) {
+    const userId = new ObjectId().toHexString();
+    usersData.push({
+      id: userId,
+      loginUserName: userData.loginUserName,
+      password: userData.password,
+      role: UserRole.Teacher,
+    });
+
+    for (const gradeId of gradeIds) {
+      teacherGradeLinks.push({
+        teacherId: userId,
+        gradeId,
+      });
+    }
+
+    if (bookCategoryIds && bookCategoryIds.length > 0) {
+      for (const categoryId of bookCategoryIds) {
+        teacherBookCategoryLinks.push({
+          teacherId: userId,
+          categoryId,
         });
-        // asign book category if provided
-        if (bookCategoryIds && bookCategoryIds.length > 0) {
-          const teacherBookCategoryLinks = bookCategoryIds.map(
-            (bookCategoryId) => ({
-              teacherId: user.id,
-              categoryId: bookCategoryId,
-            })
-          );
-          await tx.teachersBookCategories.createMany({
-            data: teacherBookCategoryLinks,
-          });
-        }
       }
-      return;
-    },
-    { maxWait: 10000, timeout: 60000 }
-  );
+    }
+  }
+
+  const operations: any[] = [
+    prisma.user.createMany({ data: usersData }),
+    prisma.teacherGrades.createMany({ data: teacherGradeLinks }),
+  ];
+
+  if (teacherBookCategoryLinks.length > 0) {
+    operations.push(
+      prisma.teachersBookCategories.createMany({
+        data: teacherBookCategoryLinks,
+      })
+    );
+  }
+
+  await prisma.$transaction(operations);
+  return users;
 };
