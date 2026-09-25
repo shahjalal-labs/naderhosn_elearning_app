@@ -182,6 +182,7 @@ const getAllBooks = async (query: any) => {
 
   // Build the cleaned query object
   const cleanedQuery = {
+    sort: "bookName",
     ...restQuery,
     ...(finalCategoryId && { categoryId: finalCategoryId }),
   };
@@ -273,6 +274,7 @@ const getAllBooksForTeacher = async (query: any, user: JwtPayload) => {
     prisma.books.findMany({
       where: whereClause,
       include: { category: true, Resources: true },
+      orderBy: { bookName: "asc" },
       skip,
       take: limit,
     }),

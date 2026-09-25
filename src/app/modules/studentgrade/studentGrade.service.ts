@@ -114,7 +114,11 @@ const getGradesByIdForstudent = async (
           bookName: { contains: query.searchTerm, mode: "insensitive" },
         },
         include: {
+          category: true,
           Resources: true,
+        },
+        orderBy: {
+          bookName: "asc",
         },
       });
       break;
