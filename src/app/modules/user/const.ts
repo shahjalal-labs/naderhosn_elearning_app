@@ -87,8 +87,16 @@ export const generateUniqueStudentUserNames = async (
 
   while (finalSet.size < count) {
     const candidate = generateStudentUserName();
-    if (!existingSet.has(candidate)) {
-      finalSet.add(candidate);
+    if (!existingSet.has(candidate) && !finalSet.has(candidate)) {
+      const isTaken = await prisma.user.findFirst({
+        where: { loginUserName: candidate },
+        select: { id: true },
+      });
+      if (!isTaken) {
+        finalSet.add(candidate);
+      } else {
+        existingSet.add(candidate);
+      }
     }
   }
 
@@ -118,8 +126,16 @@ export const generateUniqueTeacherUserNames = async (
 
   while (finalSet.size < count) {
     const candidate = generateTeacherUserName();
-    if (!existingSet.has(candidate)) {
-      finalSet.add(candidate);
+    if (!existingSet.has(candidate) && !finalSet.has(candidate)) {
+      const isTaken = await prisma.user.findFirst({
+        where: { loginUserName: candidate },
+        select: { id: true },
+      });
+      if (!isTaken) {
+        finalSet.add(candidate);
+      } else {
+        existingSet.add(candidate);
+      }
     }
   }
 
