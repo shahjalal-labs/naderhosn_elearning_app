@@ -22,9 +22,9 @@ const studentOverview = async (user: JwtPayload) => {
   }
   const totalBooksCount = await prisma.books.count({
     where: {
-      GradeBooks: {
+      StudentBooks: {
         some: {
-          gradeId: studentGrade?.gradeId,
+          studentId: user.id,
         },
       },
     },
@@ -33,9 +33,9 @@ const studentOverview = async (user: JwtPayload) => {
   const totalResources = await prisma.resources.count({
     where: {
       book: {
-        GradeBooks: {
+        StudentBooks: {
           some: {
-            gradeId: studentGrade.gradeId,
+            studentId: user.id,
           },
         },
       },
@@ -91,9 +91,9 @@ const getGradesByIdForstudent = async (
   // count for header
   const bookCount = await prisma.books.count({
     where: {
-      GradeBooks: {
+      StudentBooks: {
         some: {
-          gradeId: studentGrade.gradeId,
+          studentId: user.id,
         },
       },
     },
@@ -106,12 +106,14 @@ const getGradesByIdForstudent = async (
     case gradeQueryFilterForStudent.BOOKS:
       extraData = await prisma.books.findMany({
         where: {
-          GradeBooks: {
+          StudentBooks: {
             some: {
-              gradeId: studentGrade.gradeId,
+              studentId: user.id,
             },
           },
-          bookName: { contains: query.searchTerm, mode: "insensitive" },
+          ...(query.searchTerm && {
+            bookName: { contains: query.searchTerm, mode: "insensitive" },
+          }),
         },
         include: {
           category: true,

@@ -124,7 +124,7 @@ const getAllBooksForForms = catchAsync(async (_req: Request, res: Response) => {
 });
 
 const getBookById = catchAsync(async (req: Request, res: Response) => {
-  const result = await bookServices.getBookById(req.params.id);
+  const result = await bookServices.getBookById(req.params.id, req.user);
   sendResponse(res, {
     success: true,
     statusCode: 200,

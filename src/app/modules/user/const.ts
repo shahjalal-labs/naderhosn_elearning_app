@@ -19,6 +19,9 @@ export interface IUserGradePayload {
   };
   newBookCategoryIds : string[] | undefined;
   deletedBookCategoryIds : string[] | undefined;
+  bookIds?: string[] | undefined;
+  newBookAssign?: string[] | undefined;
+  deletedBook?: string[] | undefined;
 }
 export interface CreateNewTeacherType {
   name: string;
@@ -36,6 +39,7 @@ export interface CreateNewStudentType {
   email?: string; // optional
   schoolId: string;
   gradeId: string;
+  bookIds?: string[];
 }
 export interface usersQuery {
   schoolName?: string;
@@ -158,6 +162,17 @@ export const bulkUploadStudent = async (
     gradeId: string;
   }[] = [];
 
+  const gradeBooks = await prisma.gradeBooks.findMany({
+    where: { gradeId },
+    select: { bookId: true },
+  });
+  const bookIds = Array.from(new Set(gradeBooks.map((gb) => gb.bookId)));
+
+  const studentBookLinks: {
+    studentId: string;
+    bookId: string;
+  }[] = [];
+
   for (const userData of users) {
     const userId = new ObjectId().toHexString();
     usersData.push({
@@ -171,12 +186,25 @@ export const bulkUploadStudent = async (
       studentId: userId,
       gradeId,
     });
+
+    for (const bookId of bookIds) {
+      studentBookLinks.push({
+        studentId: userId,
+        bookId,
+      });
+    }
   }
 
-  await prisma.$transaction([
+  const operations: any[] = [
     prisma.user.createMany({ data: usersData }),
     prisma.studentGrades.createMany({ data: studentGradeLinks }),
-  ]);
+  ];
+
+  if (studentBookLinks.length > 0) {
+    operations.push(prisma.studentBooks.createMany({ data: studentBookLinks }));
+  }
+
+  await prisma.$transaction(operations);
 
   return users;
 };

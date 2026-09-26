@@ -47,6 +47,7 @@ export const createStudent = z.object({
     required_error:
       "Grade Id is Required and student can assign only one Grade.",
   }),
+  bookIds: z.array(z.string()).optional(),
 });
 
 export const StudentBulkUploadValidation = z.object({

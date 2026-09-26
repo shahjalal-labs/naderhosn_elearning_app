@@ -318,6 +318,11 @@ const getSingleUserIntoDB = async (id: string) => {
           },
         },
       },
+      StudentBooks: {
+        include: {
+          book: true,
+        },
+      },
     },
   });
 
@@ -331,13 +336,16 @@ const getSingleUserIntoDB = async (id: string) => {
   // Optionally, remove irrelevant relations based on role
   if (sanitizedUser.role === "Student") {
     Reflect.deleteProperty(sanitizedUser, "Teacher");
-    // Reflect.deleteProperty(sanitizedUser, "Teacher");
+    Reflect.deleteProperty(sanitizedUser, "teachersBookCategories");
   } else if (sanitizedUser.role === "Teacher") {
     Reflect.deleteProperty(sanitizedUser, "StudentGrades");
+    Reflect.deleteProperty(sanitizedUser, "StudentBooks");
     Reflect.deleteProperty(sanitizedUser, "assignments");
   } else {
     // Admin: remove student/teacher relations
     Reflect.deleteProperty(sanitizedUser, "StudentGrades");
+    Reflect.deleteProperty(sanitizedUser, "StudentBooks");
+    Reflect.deleteProperty(sanitizedUser, "teachersBookCategories");
     Reflect.deleteProperty(sanitizedUser, "assignments");
     Reflect.deleteProperty(sanitizedUser, "Teacher");
   }
@@ -598,6 +606,69 @@ const updateUser = async (
     }
   }
 
+  // handle book assignment for student
+  if (user.role === "Student") {
+    if (Array.isArray(payload.bookIds)) {
+      const currentAssigned = await prisma.studentBooks.findMany({
+        where: { studentId: user.id },
+        select: { bookId: true },
+      });
+      const currentIds = currentAssigned.map((b) => b.bookId);
+      const targetIds = payload.bookIds;
+
+      const toDelete = currentIds.filter((id) => !targetIds.includes(id));
+      const toAdd = targetIds.filter((id) => !currentIds.includes(id));
+
+      if (toDelete.length > 0) {
+        await prisma.studentBooks.deleteMany({
+          where: {
+            studentId: user.id,
+            bookId: { in: toDelete },
+          },
+        });
+      }
+      if (toAdd.length > 0) {
+        await prisma.studentBooks.createMany({
+          data: toAdd.map((bookId) => ({
+            studentId: user.id,
+            bookId,
+          })),
+        });
+      }
+    } else {
+      const deletedBook = payload.deletedBook || [];
+      const newBookAssign = payload.newBookAssign || [];
+
+      if (deletedBook.length > 0) {
+        await prisma.studentBooks.deleteMany({
+          where: {
+            studentId: user.id,
+            bookId: { in: deletedBook },
+          },
+        });
+      }
+      if (newBookAssign.length > 0) {
+        const existing = await prisma.studentBooks.findMany({
+          where: {
+            studentId: user.id,
+            bookId: { in: newBookAssign },
+          },
+          select: { bookId: true },
+        });
+        const existingIds = new Set(existing.map((e) => e.bookId));
+        const filteredNew = newBookAssign.filter((id) => !existingIds.has(id));
+        if (filteredNew.length > 0) {
+          await prisma.studentBooks.createMany({
+            data: filteredNew.map((bookId) => ({
+              studentId: user.id,
+              bookId,
+            })),
+          });
+        }
+      }
+    }
+  }
+
   return { message: "User updated successfully" };
 };
 
@@ -829,7 +900,7 @@ const createStudent = async (
   payload: CreateNewStudentType,
   file?: Express.Multer.File
 ) => {
-  const { gradeId, schoolId, userName, email, password, ...rest } = payload;
+  const { gradeId, schoolId, userName, email, password, bookIds, ...rest } = payload;
 
   const isAlreadyTakenUserName = await prisma.user.findFirst({
     where: {
@@ -883,6 +954,27 @@ const createStudent = async (
       studentId: user.id,
     },
   });
+
+  let booksToAssign: string[] = [];
+  if (Array.isArray(bookIds)) {
+    booksToAssign = bookIds;
+  } else {
+    // If not explicitly provided, auto-assign all books belonging to the student's grade
+    const gradeBooks = await prisma.gradeBooks.findMany({
+      where: { gradeId },
+      select: { bookId: true },
+    });
+    booksToAssign = Array.from(new Set(gradeBooks.map((gb) => gb.bookId)));
+  }
+
+  if (booksToAssign.length > 0) {
+    await prisma.studentBooks.createMany({
+      data: booksToAssign.map((bId) => ({
+        studentId: user.id,
+        bookId: bId,
+      })),
+    });
+  }
 
   return user;
 };

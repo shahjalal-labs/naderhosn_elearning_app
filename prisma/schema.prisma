@@ -32,6 +32,7 @@ model User {
   Teacher                TeacherGrades[]
   assignments            AssignmentStudent[]
   teachersBookCategories teachersBookCategories[]
+  StudentBooks           StudentBooks[]
 
   @@map("users")
 }
@@ -155,6 +156,20 @@ model StudentGrades {
   @@map("gradeStudents")
 }
 
+model StudentBooks {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId String   @db.ObjectId
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  bookId    String   @db.ObjectId
+  book      Books    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, bookId])
+  @@map("student_books")
+}
+
 model TeacherGrades {
   id        String @id @default(auto()) @map("_id") @db.ObjectId
   teacherId String @db.ObjectId
@@ -229,6 +244,7 @@ model Books {
   Assignment  Assignment[]
   Resources   Resources[]
   GradeBooks  GradeBooks[]
+  StudentBooks StudentBooks[]
 
   @@map("gradeBooks")
 }

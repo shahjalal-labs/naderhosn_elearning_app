@@ -625,6 +625,7 @@ const getAssignedBooksForSchool = async (schoolId: string) => {
       author?: string | null;
       categoryName?: string | null;
       grades: string[];
+      gradeIds: string[];
     }
   >();
 
@@ -638,10 +639,14 @@ const getAssignedBooksForSchool = async (schoolId: string) => {
         author: gb.book.author,
         categoryName: gb.book.category?.name || null,
         grades: [],
+        gradeIds: [],
       });
     }
     if (gb.grade?.grade && !booksMap.get(gb.book.id)!.grades.includes(gb.grade.grade)) {
       booksMap.get(gb.book.id)!.grades.push(gb.grade.grade);
+    }
+    if (gb.grade?.id && !booksMap.get(gb.book.id)!.gradeIds.includes(gb.grade.id)) {
+      booksMap.get(gb.book.id)!.gradeIds.push(gb.grade.id);
     }
   }
 

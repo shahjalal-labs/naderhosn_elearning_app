@@ -1,4 +1,4 @@
-import { BookCategory, Books, ResoucresType } from "@prisma/client";
+import { BookCategory, Books, ResoucresType, UserRole } from "@prisma/client";
 import { uploadToDigitalOceanAWS } from "../../../helpers/uploadToDigitalOceanAWS";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
@@ -323,7 +323,23 @@ const getAllBooksForForm = async () => {
 //   };
 // };
 
-const getBookById = async (id: string) => {
+const getBookById = async (id: string, user?: JwtPayload) => {
+  // If user is a Student, enforce that the book is assigned to them
+  if (user && (user.role === UserRole.Student || user.role === "Student")) {
+    const isAssigned = await prisma.studentBooks.findFirst({
+      where: {
+        studentId: user.id,
+        bookId: id,
+      },
+    });
+    if (!isAssigned) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        "Access denied: this book is not assigned to you"
+      );
+    }
+  }
+
   const res = await prisma.books.findUnique({
     where: { id },
     include: {
@@ -358,7 +374,7 @@ const getBookById = async (id: string) => {
   });
 
   if (!res) {
-    throw new Error("Book not found");
+    throw new ApiError(httpStatus.NOT_FOUND, "Book not found");
   }
 
   // ---- Group grades by schoolId ----
