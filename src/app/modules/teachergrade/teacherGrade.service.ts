@@ -182,18 +182,35 @@ const getGradesByIdForTeacher = async (
           gradeId: id,
           student: query.searchTerm
             ? {
-                fullName: {
-                  contains: query.searchTerm,
-                  mode: "insensitive",
-                },
+                OR: [
+                  {
+                    fullName: {
+                      contains: query.searchTerm,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    loginUserName: {
+                      contains: query.searchTerm,
+                      mode: "insensitive",
+                    },
+                  },
+                ],
               }
             : {},
         },
         select: {
+          grade: {
+            select: {
+              id: true,
+              grade: true,
+            },
+          },
           student: {
             select: {
               id: true,
               fullName: true,
+              loginUserName: true,
               profileImage: true,
               email: true,
               phone: true,
@@ -203,7 +220,11 @@ const getGradesByIdForTeacher = async (
           },
         },
       });
-      extraData = studentData.map((s) => s.student);
+      extraData = studentData.map((s) => ({
+        ...s.student,
+        grade: s.grade?.grade,
+        gradeId: s.grade?.id,
+      }));
       break;
 
     case gradeQueryFilterForTeacher.BOOKS:
