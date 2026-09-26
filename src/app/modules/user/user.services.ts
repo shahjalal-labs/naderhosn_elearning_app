@@ -330,8 +330,8 @@ const getSingleUserIntoDB = async (id: string) => {
     throw new ApiError(404, "User not found!");
   }
 
-  // Remove sensitive fields
-  const { password, ...sanitizedUser } = user;
+  // Keep password accessible for admin/teacher view
+  const sanitizedUser = { ...user };
 
   // Optionally, remove irrelevant relations based on role
   if (sanitizedUser.role === "Student") {

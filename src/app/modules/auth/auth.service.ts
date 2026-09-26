@@ -272,23 +272,61 @@ const resetForgotPasswordDB = async (newPassword: string, userId: string) => {
 const getProfileFromDB = async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-     include: {
+    include: {
+      StudentGrades: {
+        include: {
+          grade: {
+            include: {
+              school: true,
+            },
+          },
+        },
+      },
       Teacher: {
-        select: {
-          gradeId:true
-        }
-      }
-    }
+        include: {
+          grade: {
+            include: {
+              school: true,
+            },
+          },
+        },
+      },
+    },
   });
   if (!user) {
     throw new ApiError(404, "user not found!");
   }
 
-  const { password, joinedAt, updatedAt, ...sanitizedUser } = user;
+  let schoolName = "";
+  let schoolId = "";
+  let gradeName = "";
+  let gradeId = "";
+
+  if (user.role === UserRole.Student && user.StudentGrades?.length > 0) {
+    const grades = user.StudentGrades.map((sg) => sg.grade?.grade).filter(Boolean);
+    gradeName = Array.from(new Set(grades)).join(", ");
+    gradeId = user.StudentGrades[0]?.gradeId || "";
+    const schools = user.StudentGrades.map((sg) => sg.grade?.school?.name).filter(Boolean);
+    schoolName = Array.from(new Set(schools)).join(", ");
+    schoolId = user.StudentGrades[0]?.grade?.school?.id || "";
+  } else if (user.role === UserRole.Teacher && user.Teacher?.length > 0) {
+    const grades = user.Teacher.map((t) => t.grade?.grade).filter(Boolean);
+    gradeName = Array.from(new Set(grades)).join(", ");
+    gradeId = user.Teacher[0]?.gradeId || "";
+    const schools = user.Teacher.map((t) => t.grade?.school?.name).filter(Boolean);
+    schoolName = Array.from(new Set(schools)).join(", ");
+    schoolId = user.Teacher[0]?.grade?.school?.id || "";
+  }
+
+  const { joinedAt, updatedAt, ...sanitizedUser } = user;
 
   return {
     ...sanitizedUser,
-    gradeId: user?.Teacher[0]?.gradeId || null
+    password: user.password,
+    schoolName,
+    schoolId,
+    gradeName,
+    gradeId: gradeId || user?.Teacher?.[0]?.gradeId || null,
   };
 };
 
