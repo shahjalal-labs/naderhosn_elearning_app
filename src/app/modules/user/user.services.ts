@@ -467,7 +467,9 @@ const updateUser = async (
     gender: userUpdatePayload.gender ?? user.gender,
     phone: userUpdatePayload.phone ?? user.phone,
     password: userUpdatePayload.password
-      ? bcrypt.hashSync(userUpdatePayload.password, 8)
+      ? (user.role === UserRole.Admin
+          ? bcrypt.hashSync(userUpdatePayload.password, 8)
+          : userUpdatePayload.password.trim())
       : user.password,
     status: userUpdatePayload.status ?? user.status,
     loginUserName: userUpdatePayload.loginUserName ?? user.loginUserName,
@@ -902,9 +904,12 @@ const createStudent = async (
 ) => {
   const { gradeId, schoolId, userName, email, password, bookIds, ...rest } = payload;
 
+  const cleanUserName = userName.trim();
+  const cleanPassword = password.trim();
+
   const isAlreadyTakenUserName = await prisma.user.findFirst({
     where: {
-      loginUserName: payload.userName,
+      loginUserName: cleanUserName,
     },
   });
   if (isAlreadyTakenUserName) {
@@ -923,11 +928,29 @@ const createStudent = async (
   const isAlreadyExist = await prisma.studentGrades.findFirst({
     where: {
       grade: { schoolId },
-      student: { loginUserName: userName },
+      student: { loginUserName: cleanUserName },
     },
   });
   if (isAlreadyExist) {
     throw new ApiError(409, "Student already exists in this school");
+  }
+
+  // Automatic given fake email address if not provided
+  let studentEmail = email?.trim();
+  if (!studentEmail || studentEmail === "") {
+    const sanitizedName =
+      cleanUserName.toLowerCase().replace(/[^a-z0-9]/g, "") ||
+      `student${Math.floor(10000 + Math.random() * 90000)}`;
+    let candidateEmail = `${sanitizedName}@darelchimalapp.com`;
+    const existingUser = await prisma.user.findFirst({
+      where: { email: candidateEmail },
+    });
+    if (existingUser) {
+      candidateEmail = `${sanitizedName}_${Math.floor(
+        1000 + Math.random() * 9000
+      )}@darelchimalapp.com`;
+    }
+    studentEmail = candidateEmail;
   }
 
   const profileImage = file
@@ -938,10 +961,10 @@ const createStudent = async (
   const [user] = await prisma.$transaction([
     prisma.user.create({
       data: {
-        fullName: payload.name, // only include fields that exist in User model
-        email,
-        password: payload.password,
-        loginUserName: userName,
+        fullName: payload.name?.trim() || cleanUserName,
+        email: studentEmail,
+        password: cleanPassword,
+        loginUserName: cleanUserName,
         role: UserRole.Student,
         profileImage,
       },
@@ -994,9 +1017,12 @@ const createTeacher = async (
     ...rest
   } = payload;
 
+  const cleanUserName = userName.trim();
+  const cleanPassword = password.trim();
+
   const isAlreadyTakenUserName = await prisma.user.findFirst({
     where: {
-      loginUserName: payload.userName,
+      loginUserName: cleanUserName,
     },
   });
   if (isAlreadyTakenUserName) {
@@ -1019,7 +1045,7 @@ const createTeacher = async (
   const isAlreadyExist = await prisma.teacherGrades.findFirst({
     where: {
       grade: { schoolId },
-      teacher: { loginUserName: userName },
+      teacher: { loginUserName: cleanUserName },
     },
   });
 
@@ -1031,13 +1057,31 @@ const createTeacher = async (
     ? (await uploadToDigitalOceanAWS(file)).Location
     : "https://i.ibb.co/nrs3FjM/images.png";
 
+  // Automatic given fake email address if not provided
+  let teacherEmail = email?.trim();
+  if (!teacherEmail || teacherEmail === "") {
+    const sanitizedName =
+      cleanUserName.toLowerCase().replace(/[^a-z0-9]/g, "") ||
+      `teacher${Math.floor(10000 + Math.random() * 90000)}`;
+    let candidateEmail = `${sanitizedName}@darelchimalapp.com`;
+    const existingUser = await prisma.user.findFirst({
+      where: { email: candidateEmail },
+    });
+    if (existingUser) {
+      candidateEmail = `${sanitizedName}_${Math.floor(
+        1000 + Math.random() * 9000
+      )}@darelchimalapp.com`;
+    }
+    teacherEmail = candidateEmail;
+  }
+
   // create user (teacher)
   const user = await prisma.user.create({
     data: {
-      fullName: name,
-      email,
-      password: password,
-      loginUserName: userName,
+      fullName: name?.trim() || cleanUserName,
+      email: teacherEmail,
+      password: cleanPassword,
+      loginUserName: cleanUserName,
       role: UserRole.Teacher,
       profileImage,
     },

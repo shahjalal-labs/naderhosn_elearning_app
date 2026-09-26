@@ -16,15 +16,18 @@ issue remain: 5a
 ---
 
 remaining
-Resource to student
 student book assignment
 student creation
 student creation manual (scl assignment)
 
-students veiw page all scls search option remove email phone etc and keep pass username grade
+students view page all scls search option. remove email phone etc and keep pass username grade
 
 teacher > assignemt creation further check
 
-teacher assignment indivdual student data need to show > after select student disapper the written title, instrcution
+teacher assignment creation indivdual student data need to show > after select grade disappering the already written title, instrcution
 
 text overlapping in dropdown
+
+student teacher profile section updated showing school grade user paassword, user name etc.
+
+student manual creation => don't login by username & password => automatic given fake email address (FIXED)

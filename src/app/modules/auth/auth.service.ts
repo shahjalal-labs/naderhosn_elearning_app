@@ -18,11 +18,20 @@ const loginUserIntoDB = async (payload: {
   password: string;
   fcmToken: string;
 }) => {
+  const trimmedUserName = payload.userName?.trim();
+  const trimmedPassword = payload.password?.trim();
+
+  if (!trimmedUserName || !trimmedPassword) {
+    throw new ApiError(400, "Username and password are required");
+  }
+
   const user = await prisma.user.findFirst({
     where: {
       OR: [
-        { loginUserName: payload.userName },
-        { email: payload.userName },
+        { loginUserName: trimmedUserName },
+        { email: trimmedUserName },
+        { loginUserName: trimmedUserName.toLowerCase() },
+        { email: trimmedUserName.toLowerCase() },
       ],
     },
     include: {
@@ -45,7 +54,13 @@ const loginUserIntoDB = async (payload: {
     );
   }
 
-  const isPasswordValid = payload.password === user.password;
+  const isPasswordValid =
+    trimmedPassword === user.password ||
+    payload.password === user.password ||
+    (user.password?.startsWith("$2")
+      ? (await bcrypt.compare(trimmedPassword, user.password)) ||
+        (await bcrypt.compare(payload.password, user.password))
+      : false);
 
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid credentials");
@@ -83,9 +98,21 @@ const adminLogin = async (payload: {
   password: string;
   fcmToken: string;
 }) => {
-  const user = await prisma.user.findUnique({
+  const trimmedUserName = payload.userName?.trim();
+  const trimmedPassword = payload.password?.trim();
+
+  if (!trimmedUserName || !trimmedPassword) {
+    throw new ApiError(400, "Username and password are required");
+  }
+
+  const user = await prisma.user.findFirst({
     where: {
-      loginUserName: payload.userName,
+      OR: [
+        { loginUserName: trimmedUserName },
+        { email: trimmedUserName },
+        { loginUserName: trimmedUserName.toLowerCase() },
+        { email: trimmedUserName.toLowerCase() },
+      ],
       role: "Admin",
     },
   });
@@ -101,10 +128,13 @@ const adminLogin = async (payload: {
     );
   }
 
-  const isPasswordValid = await bcrypt.compare(
-    payload.password,
-    user?.password
-  );
+  const isPasswordValid =
+    (user.password?.startsWith("$2")
+      ? (await bcrypt.compare(trimmedPassword, user.password)) ||
+        (await bcrypt.compare(payload.password, user.password))
+      : false) ||
+    trimmedPassword === user.password ||
+    payload.password === user.password;
   
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid credentials");
@@ -384,10 +414,11 @@ const changePassword = async (
       "Your account already deleted, please contact Admin"
     );
   }
-  const isPasswordValid = await bcrypt.compare(
-    payload.oldPassword,
-    user?.password
-  );
+  const isPasswordValid =
+    payload.oldPassword === user?.password ||
+    (user?.password?.startsWith("$2")
+      ? await bcrypt.compare(payload.oldPassword, user?.password)
+      : false);
 
   if (!isPasswordValid) {
     throw new ApiError(400, "Invalid Password");
