@@ -3,7 +3,7 @@ import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import { sendGroupNotifications } from "../notifications/notification.services";
 import { JwtPayload } from "jsonwebtoken";
-import { notificationQueue } from "../../../queue/notification.queue";
+import { addJobToQueue } from "../../../queue/queue.helpers";
 const prisma = new PrismaClient();
 
 const createAnnouncement = async (
@@ -62,11 +62,10 @@ const createAnnouncement = async (
       data.anouncement
     );
   } else {
-    const delay = postDate.getTime() - Date.now();
-    await notificationQueue.add(
+    await addJobToQueue(
       "publishAnnouncements",
       { announcementId: announcement.id },
-      { delay }
+      postDate
     );
   }
 
@@ -108,11 +107,10 @@ const createAnnouncementByAdmin = async (
       `New Announcement: "${announcement.anouncement}"`,
     );
   } else {
-    const delay = postDate.getTime() - Date.now();
-    await notificationQueue.add(
+    await addJobToQueue(
       "publishAnnouncements",
       { announcementId: announcement.id },
-      { delay }
+      postDate
     );
   }
 

@@ -50,41 +50,45 @@ const createAssignment = async (
     attachament = (await uploadToDigitalOceanAWS(file)).Location;
   }
 
-  return await prisma.$transaction(async (tx) => {
-    const assignment = await tx.assignment.create({
+  const { assignment, studentIds } = await prisma.$transaction(async (tx) => {
+    const newAssignment = await tx.assignment.create({
       data: {
         title: data.title,
         startPage: data.startPage,
         endPage: data.endPage,
         instruction: data.instruction,
-        attachament: data.attachament || attachament,
+        attachament: (data as any).attachment || data.attachament || attachament,
         dueDate: new Date(data.dueDate),
         gradeId: data.gradeId,
         bookId: data.bookId,
       },
     });
 
-    let studentIds: string[] = [];
+    let assignedStudentIds: string[] = [];
     if (Boolean(data.assignToAll)) {
       const students = await tx.studentGrades.findMany({
         where: { gradeId: data.gradeId },
         select: { studentId: true },
       });
-      studentIds = students.map((s) => s.studentId);
+      assignedStudentIds = students.map((s) => s.studentId);
     } else {
-      studentIds = data.studentIds || [];
+      assignedStudentIds = data.studentIds || [];
     }
 
-    if (studentIds.length > 0) {
+    if (assignedStudentIds.length > 0) {
       await tx.assignmentStudent.createMany({
-        data: studentIds.map((id: string) => ({
+        data: assignedStudentIds.map((id: string) => ({
           userId: id,
-          assignmentId: assignment.id,
+          assignmentId: newAssignment.id,
         })),
       });
     }
 
-    // Immediate notification
+    return { assignment: newAssignment, studentIds: assignedStudentIds };
+  });
+
+  // Immediate notification (run safely outside of DB transaction)
+  if (studentIds.length > 0) {
     try {
       await sendGroupNotifications(
         studentIds,
@@ -94,26 +98,26 @@ const createAssignment = async (
     } catch (err) {
       console.error("Failed to send assignment notifications:", err);
     }
+  }
 
-    // Schedule Reminder (1 day or 2 hours before deadline)
-    const reminderTime = new Date(
-      assignment.dueDate.getTime() - 24 * 60 * 60 * 1000
-    );
-    await addJobToQueue(
-      "assignmentReminder",
-      { assignmentId: assignment.id, studentIds },
-      reminderTime
-    );
+  // Schedule Reminder (1 day before deadline)
+  const reminderTime = new Date(
+    assignment.dueDate.getTime() - 24 * 60 * 60 * 1000
+  );
+  await addJobToQueue(
+    "assignmentReminder",
+    { assignmentId: assignment.id, studentIds },
+    reminderTime
+  );
 
-    // Schedule Missed Status (at dueDate)
-    await addJobToQueue(
-      "assignmentMissed",
-      { assignmentId: assignment.id, studentIds },
-      new Date(assignment.dueDate)
-    );
+  // Schedule Missed Status (at dueDate)
+  await addJobToQueue(
+    "assignmentMissed",
+    { assignmentId: assignment.id, studentIds },
+    new Date(assignment.dueDate)
+  );
 
-    return assignment;
-  });
+  return assignment;
 };
 
 const getAllAssignments = async () => {
@@ -131,7 +135,7 @@ const getAssignmentById = async (id: string, user: JwtPayload) => {
         where: { id },
         include: {
           book: {
-            select: { id: true, bookName: true, coverImg: true },
+            select: { id: true, bookName: true, coverImg: true, file: true },
           },
           students: {
             include: {
@@ -153,7 +157,14 @@ const getAssignmentById = async (id: string, user: JwtPayload) => {
         endPage: assignment.endPage,
         assignDate: assignment.createdAt,
         dueDate: assignment.dueDate,
-        bookData: assignment.book,
+        attachment: assignment.attachament,
+        attachament: assignment.attachament,
+        bookData: assignment.book
+          ? {
+              ...assignment.book,
+              bookPdf: assignment.book.file,
+            }
+          : null,
       };
 
       const totalSubmissions = assignment.students.filter(
@@ -190,7 +201,7 @@ const getAssignmentById = async (id: string, user: JwtPayload) => {
           assignment: {
             include: {
               book: {
-                select: { id: true, bookName: true, coverImg: true },
+                select: { id: true, bookName: true, coverImg: true, file: true },
               },
             },
           },
@@ -219,7 +230,14 @@ const getAssignmentById = async (id: string, user: JwtPayload) => {
           endPage: myAssignment.assignment.endPage,
           assignDate: myAssignment.assignment.createdAt,
           dueDate: myAssignment.assignment.dueDate,
-          bookData: myAssignment.assignment.book,
+          attachment: myAssignment.assignment.attachament,
+          attachament: myAssignment.assignment.attachament,
+          bookData: myAssignment.assignment.book
+            ? {
+                ...myAssignment.assignment.book,
+                bookPdf: myAssignment.assignment.book.file,
+              }
+            : null,
         },
         student: myAssignment.user,
         answer: {
@@ -246,21 +264,39 @@ const getAssignmentByIdForTeacher = async (assignmentProgressId: string) => {
     where: {
       id: assignmentProgressId,
     },
-    include  :{
-      user :{
-        omit :{
-          password : true,
-          loginUserName : true,
-          fcmToken : true,
-        }
+    include: {
+      user: {
+        omit: {
+          password: true,
+          loginUserName: true,
+          fcmToken: true,
+        },
       },
-      assignment : true
-    }
+      assignment: {
+        include: {
+          book: {
+            select: { id: true, bookName: true, coverImg: true, file: true },
+          },
+        },
+      },
+    },
   });
   if (!result) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Not Found ");
   }
-  return result;
+  return {
+    ...result,
+    assignment: {
+      ...result.assignment,
+      attachment: result.assignment.attachament,
+      bookData: result.assignment.book
+        ? {
+            ...result.assignment.book,
+            bookPdf: result.assignment.book.file,
+          }
+        : null,
+    },
+  };
 };
 
 const updateAssignment = async (
