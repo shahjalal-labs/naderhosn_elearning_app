@@ -168,7 +168,9 @@ const getAssignmentById = async (id: string, user: JwtPayload) => {
       };
 
       const totalSubmissions = assignment.students.filter(
-        (s) => s.assignmentStatus === AssignmentStatus.Submitted
+        (s) =>
+          s.assignmentStatus === AssignmentStatus.Submitted ||
+          s.assignmentStatus === AssignmentStatus.Graded
       ).length;
 
       const studentsArray = assignment.students.map((s) => ({
@@ -247,7 +249,11 @@ const getAssignmentById = async (id: string, user: JwtPayload) => {
           studentAnswer: myAssignment.studentAnswer,
           studentAttachment: myAssignment.studentAttachement,
           feedBack: myAssignment.FeedBack,
-          status: myAssignment.assignmentStatus,
+          feedback: myAssignment.FeedBack,
+          status:
+            myAssignment.assignmentGrade || myAssignment.FeedBack
+              ? AssignmentStatus.Graded
+              : myAssignment.assignmentStatus,
         },
       };
       break;
@@ -422,6 +428,7 @@ const gradedAssignmentIntoDB = async (
       assignmentGrade: data.grade,
       FeedBack: data.feedback,
       gradedBy: user.fullName,
+      assignmentStatus: AssignmentStatus.Graded,
     },
   });
   try {

@@ -2,6 +2,7 @@ import { JwtPayload } from "jsonwebtoken";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import prisma from "../../../shared/prisma";
+import { AssignmentStatus } from "@prisma/client";
 import {
   gradeQueryFilterForStudent,
   GradeQueryFilterTypeForStudent,
@@ -135,12 +136,17 @@ const getGradesByIdForstudent = async (
         },
         select: {
           assignmentStatus: true,
+          assignmentGrade: true,
+          FeedBack: true,
           assignment: true,
         },
       });
       extraData = assignmentData.map((a) => ({
         ...a.assignment,
-        status: a.assignmentStatus,
+        status:
+          a.assignmentGrade || a.FeedBack
+            ? AssignmentStatus.Graded
+            : a.assignmentStatus,
       }));
       break;
 
