@@ -979,10 +979,10 @@ const createStudent = async (
   });
 
   let booksToAssign: string[] = [];
-  if (Array.isArray(bookIds)) {
+  if (Array.isArray(bookIds) && bookIds.length > 0) {
     booksToAssign = bookIds;
   } else {
-    // If not explicitly provided, auto-assign all books belonging to the student's grade
+    // If not explicitly provided or empty, auto-assign all books belonging to the student's grade
     const gradeBooks = await prisma.gradeBooks.findMany({
       where: { gradeId },
       select: { bookId: true },
