@@ -12,7 +12,7 @@ export const userWorker = new Worker(
 
     try {
       if (job.data.type === "student") {
-        await bulkUploadStudent(job.data.users, job.data.gradeId);
+        await bulkUploadStudent(job.data.users, job.data.gradeId, job.data.bookIds);
         console.log(`✅ Student job ${job.id} completed`);
         return;
       }

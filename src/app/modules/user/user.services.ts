@@ -1117,6 +1117,7 @@ const bulkUploadStudentIntoDB = async (payload: {
   schoolId: string;
   gradeId: string;
   numberOfStudent: number;
+  bookIds?: string[];
 }) => {
   const [school, grade] = await Promise.all([
     prisma.school.findUnique({ where: { id: payload.schoolId } }),
@@ -1136,7 +1137,7 @@ const bulkUploadStudentIntoDB = async (payload: {
   }));
 
   // Perform bulk upload in batch (no N+1 loop)
-  await bulkUploadStudent(users, payload.gradeId);
+  await bulkUploadStudent(users, payload.gradeId, payload.bookIds);
 
   return {
     message: `${payload.numberOfStudent} students created successfully`,

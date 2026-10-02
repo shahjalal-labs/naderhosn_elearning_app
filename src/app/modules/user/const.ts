@@ -148,7 +148,8 @@ export const generateUniqueTeacherUserNames = async (
 
 export const bulkUploadStudent = async (
   users: { loginUserName: string; password: string }[],
-  gradeId: string
+  gradeId: string,
+  bookIds?: string[]
 ) => {
   const usersData: {
     id: string;
@@ -162,11 +163,16 @@ export const bulkUploadStudent = async (
     gradeId: string;
   }[] = [];
 
-  const gradeBooks = await prisma.gradeBooks.findMany({
-    where: { gradeId },
-    select: { bookId: true },
-  });
-  const bookIds = Array.from(new Set(gradeBooks.map((gb) => gb.bookId)));
+  let booksToAssign: string[] = [];
+  if (Array.isArray(bookIds) && bookIds.length > 0) {
+    booksToAssign = bookIds;
+  } else {
+    const gradeBooks = await prisma.gradeBooks.findMany({
+      where: { gradeId },
+      select: { bookId: true },
+    });
+    booksToAssign = Array.from(new Set(gradeBooks.map((gb) => gb.bookId)));
+  }
 
   const studentBookLinks: {
     studentId: string;
@@ -187,7 +193,7 @@ export const bulkUploadStudent = async (
       gradeId,
     });
 
-    for (const bookId of bookIds) {
+    for (const bookId of booksToAssign) {
       studentBookLinks.push({
         studentId: userId,
         bookId,
