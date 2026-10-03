@@ -38,3 +38,11 @@ All school search means here has many schools school selection option, but there
 
 s40262
 8204
+
+---
+
+Delivery message:
+
+Frontend updated source code: https://drive.google.com/file/d/1i6wNpPk_tHv_WNx_r0tRg_ApeRwwC573/view?usp=sharing
+
+Backend updated source code: https://drive.google.com/file/d/1HZVIOkmZ8Of939yxWiBowaPTqtyAiAr-/view?usp=sharing
