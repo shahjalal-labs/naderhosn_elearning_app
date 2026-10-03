@@ -30,13 +30,27 @@ const createResource = async (
     throw new ApiError(httpStatus.NOT_FOUND, "Book not found");
   }
   const fileUpload = file ? (await uploadToDigitalOceanAWS(file)).Location : undefined;
+
+  let uploaderName = user?.fullName;
+  if (!uploaderName || uploaderName.trim() === "") {
+    if (user?.id) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { fullName: true, loginUserName: true, role: true },
+      });
+      uploaderName = dbUser?.fullName?.trim() || dbUser?.loginUserName || user?.role || "Admin";
+    } else {
+      uploaderName = user?.role || "Admin";
+    }
+  }
+
   const res = await prisma.resources.create({
     data: {
       ...data,
       bookId,
       file: fileUpload ? fileUpload : data.file,
-      uploderName: user.fullName ?? "",
-      uplodedBy: user.role,
+      uploderName: uploaderName,
+      uplodedBy: user?.role || "Admin",
     },
   });
   const userIds = isBookExist.GradeBooks.flatMap(s => s.grade.StudentGrades.map(s => s.studentId));
@@ -53,13 +67,26 @@ const createResource = async (
 };
 
 const getAllResources = async () => {
-  return await prisma.resources.findMany();
+  const list = await prisma.resources.findMany();
+  return list.map((item) => {
+    if (!item.uploderName || item.uploderName.trim() === "" || item.uploderName.toLowerCase() === "unknown") {
+      item.uploderName = item.uplodedBy && item.uplodedBy.trim() !== "" && item.uplodedBy.toLowerCase() !== "unknown"
+        ? item.uplodedBy
+        : "Admin";
+    }
+    return item;
+  });
 };
 
 const getResourceById = async (id: string) => {
   const res = await prisma.resources.findUnique({ where: { id } });
   if (!res) throw new ApiError(httpStatus.NOT_FOUND, "Resource not found");
-  return res
+  if (!res.uploderName || res.uploderName.trim() === "" || res.uploderName.toLowerCase() === "unknown") {
+    res.uploderName = res.uplodedBy && res.uplodedBy.trim() !== "" && res.uplodedBy.toLowerCase() !== "unknown"
+      ? res.uplodedBy
+      : "Admin";
+  }
+  return res;
 };
 
 const updateResource = async (

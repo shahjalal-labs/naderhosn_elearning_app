@@ -129,6 +129,19 @@ const createBook = async (
 
   // 3. Insert Resources
   if (Resources?.length) {
+    let uploaderName = user?.fullName;
+    if (!uploaderName || uploaderName.trim() === "") {
+      if (user?.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { fullName: true, loginUserName: true, role: true },
+        });
+        uploaderName = dbUser?.fullName?.trim() || dbUser?.loginUserName || user?.role || "Admin";
+      } else {
+        uploaderName = user?.role || "Admin";
+      }
+    }
+
     await prisma.resources.createMany({
       data: Resources.map((r) => ({
         title: r.title,
@@ -136,8 +149,8 @@ const createBook = async (
         file: r.file,
         Type: r.type as ResoucresType,
         bookId: book.id,
-        uplodedBy: user.role,
-        uploderName: user.fullName,
+        uplodedBy: user?.role || "Admin",
+        uploderName: uploaderName,
       })),
     });
   }
