@@ -8,7 +8,7 @@ export const BookCategorySchema = z.object({
 
 // ---------------- book creation function ------------------
 
-export const ResourceTypeEnum = z.enum(["Pdf", "Video", "Audio"]);
+export const ResourceTypeEnum = z.enum(["Pdf", "Video", "Audio", "Image", "Link"]);
 
 // ---------- Sub Schemas ----------
 const ResourceSchema = z.object({
